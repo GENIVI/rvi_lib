@@ -152,6 +152,19 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name);
  */
 char **rvi_get_services(rvi_handle handle);
 
+
+/** @brief Get parameter details of a service.
+ *
+ * @param handle - The handle to the RVI context.
+
+ * @param service_name The fully-qualified service name.
+ *
+ * @return A JSON structure containing the named parameter pairs. The calling application is 
+ * 			responsible for freeing this memory.
+ */
+json_t *rvi_get_service_parameters(rvi_handle handle, const char *service_name);
+
+
 /** @brief Invoke a remote service
  *
  * @param handle - The handle to the RVI context.
