@@ -31,6 +31,8 @@
 
 #include <jansson.h>
 
+#define MAX_CONNECTIONS 10 /** Maximum simultaneous connections */
+
 // **********
 // DATA TYPES
 // **********
@@ -61,14 +63,17 @@ typedef enum {
 
 /** @brief Initialize the RVI library. Call before using any other functions.
  *
- * @param credentials - The JWT-encoded string containing the application's
- *                      credentials, as prepared and signed by the 
- *                      provisioning server.
+ * @param config_filename - Path to the file containing RVI config options:
+ *                          credentials - JWT encoded string
+ *                          device_cert - file with device's X.509 cert
+ *                          device_key - file with device's private key
+ *                          intermediateCA - file with intermediate CA certs
+ *                          root_cert - file with root cert
  *
  * @return A handle for the API. On failure, a NULL pointer will be returned.
  */
 
-rvi_handle rvi_init(char *credentials);
+rvi_handle rvi_init(char *config_filename);
 
 /** @brief Tear down the API.
  *
@@ -86,7 +91,7 @@ int rvi_cleanup(rvi_handle handle);
 // RVI CONNECTION MANAGEMENT
 // *************************
 
-/** @brief Load a connection from a file descriptor into the RVI context
+/** @brief Connect to a remote node at a specified address and port. 
  *
  * @param handle - The handle to the RVI context.
  * @param addr - The address of the remote connection.
@@ -167,11 +172,12 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
 // ASYNCHRONOUS I/O
 // ****************
 
-/* If a send or receive operation failed, the leftover data will be stored in a
- * buffer and the calling application will receive an error code with a note to
- * send at a later time.
+/* If a send or receive operation failed, the partial message will be stored in
+ * a temporary buffer and the function will return a value of RVI_WANT_READ or
+ * RVI_WANT_WRITE.  
  * 
- * It is the calling application's responsibility to poll before calling either.
+ * It is the calling application's responsibility to poll before calling
+ * either.
  */
 
 /** @brief Retry a read operation on a file descriptor.
