@@ -1,10 +1,3 @@
---------------------------------------------------------------------------------
-- NOTICE: This is an early pre-release version of the Remote Vehicle           -
--         Interface C Implementation. All material is subject to change.       -
--                                                                              -
-- Please send all feedback to Tatiana Jamison (tjamison@jaguarlandrover.com)   -
---------------------------------------------------------------------------------
-
 # REMOTE VEHICLE INTERFACE
 Remote Vehicle Interface (RVI) provides an architecture which, through its
 specified components, enables connected vehicles and other devices to form a
