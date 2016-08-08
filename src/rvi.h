@@ -39,13 +39,14 @@
 typedef void *rvi_handle;
 
 /** Function signature for RVI callback functions */
-typedef void (*rvi_callback_t) (json_t *);
+typedef void (*rvi_callback_t) (int fd, void* service_data, json_t *);
 
 /** Function return status codes */
 typedef enum {
     RVI_OK                  = 0,    /* Success */
     RVI_WANT_READ           = 1,    /* Retry read operation */ 
     RVI_WANT_WRITE          = 2,    /* Retry write operation */
+    RVI_ERROR_OPENSSL       = 100,  /* Unhandled error from OpenSSL */
     RVI_ERROR_NOCONFIG      = 1001, /* Configuration error */
     RVI_ERROR_JSON          = 1002, /* Error in JSON */
     RVI_ERROR_SERVCERT      = 1003, /* Server certificate is missing */
@@ -61,14 +62,17 @@ typedef enum {
 
 /** @brief Initialize the RVI library. Call before using any other functions.
  *
- * @param credentials - The JWT-encoded string containing the application's
- *                      credentials, as prepared and signed by the 
- *                      provisioning server.
+ * @param config_filename - Path to the file containing RVI config options:
+ *                          credentials - JWT encoded string
+ *                          device_cert - file with device's X.509 cert
+ *                          device_key - file with device's private key
+ *                          intermediateCA - file with intermediate CA certs
+ *                          root_cert - file with root cert
  *
  * @return A handle for the API. On failure, a NULL pointer will be returned.
  */
 
-rvi_handle rvi_init(char *credentials);
+rvi_handle rvi_init(char *config_filename);
 
 /** @brief Tear down the API.
  *
@@ -86,16 +90,19 @@ int rvi_cleanup(rvi_handle handle);
 // RVI CONNECTION MANAGEMENT
 // *************************
 
-/** @brief Load a connection from a file descriptor into the RVI context
+/** @brief Connect to a remote node at a specified address and port. 
  *
  * @param handle - The handle to the RVI context.
  * @param addr - The address of the remote connection.
- * @param port - The target port for the connection.
+ * @param port - The target port for the connection. This can be a numeric
+ *               value or a string such as "http." Allowed values (inherited
+ *               from OpenSSL) are http, telnet, socks, https, ssl, ftp, and
+ *               gopher.
  *
  * @return A file descriptor for the new socket on success.
  *         A negative error value on failure.
  */
-int rvi_connect(rvi_handle handle, const char *addr, const short port);
+int rvi_connect(rvi_handle handle, const char *addr, const char *port);
 
 /** @brief Unload a file descriptor from the RVI context
  *
@@ -105,16 +112,29 @@ int rvi_connect(rvi_handle handle, const char *addr, const short port);
  * @return 0 (RVI_OK)  on success.
  *         Error code on failure.
  */
-int rvi_disconnect(rvi_handle handle, int *fd);
+int rvi_disconnect(rvi_handle handle, int fd);
+
+// Separate call to disconnect multiple file descriptors:
+// int rvi_disconnect_multiple(rvi_handle handle, int* fd, int fd_len);
+
 
 /** @brief Return all file descriptors in the RVI context
  *
- * @param handle - The handle to the RVI context.
+ * @param handle    - The handle to the RVI context.
+ * @param conn      - Pointer to a buffer to store file descriptors (small
+ *                    integers) for each remote RVI node.  
+ * @param conn_size - Pointer to size of 'conn' buffer. This should be
+ *                    initialized to the size of the conn buffer. On success,
+ *                    it will be updated with the number of file descriptors
+ *                    updated.
  *
- * @return descriptors An array of file descriptors on success.
- *                     NULL on failure.
+ * This function will fill the conn buffer with active file descriptors from
+ * the RVI context and update conn_size to indicate the final size.
+ *
+ * @return 0 (RVI_OK) on success.
+ *         Error code on failure.
  */
-int *rvi_get_connections(rvi_handle handle);
+int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size);
 
 // **********************
 // RVI SERVICE MANAGEMENT
@@ -126,14 +146,20 @@ int *rvi_get_connections(rvi_handle handle);
  * @param service_name - The fully-qualified service name to register
  * @param callback - The callback function to be executed upon service
  *                   invocation.
+ * @param service_data - Parameters to be passed to the callback function (in
+ *                       addition to any JSON parameters from the remote node)
  *
  * @return 0 (RVI_OK) on success 
  *         Error code on failure.
  */
 int rvi_register_service(rvi_handle handle, const char *service_name, 
-                         rvi_callback_t callback);
+                         rvi_callback_t callback, void* service_data);
 
 /** @brief Unregister a previously registered service
+ *
+ * This function unregisters a service that was previously registered by the
+ * calling application. If service_name does not exist, or was registered by a
+ * remote node, it does nothing and returns an error code.
  *
  * @param handle - The handle to the RVI context
  * @param service_name The fully-qualified service name to deregister
@@ -145,12 +171,29 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name);
 
 /** @brief Get list of services available
  *
+ * This function fills the buffer at result with pointers to strings, up to the
+ * value indicated by len. Memory for each string is dynamically allocated by
+ * the library and must be freed by the calling application. Before returning,
+ * len is updated with the actual number of strings.
+ * 
  * @param handle - The handle to the RVI context.
+ * @param result - A pointer to a block of pointers for storing strings
+ * @param len - The maximum number of pointers allocated in result
  *
- * @return A list of fully-qualified service names. The calling application is
- *         responsible for freeing this memory. 
+ * @return 0 (RVI_OK) on success
+ *         Error code on failure.
  */
-char **rvi_get_services(rvi_handle handle);
+int rvi_get_services(rvi_handle handle, char **result, int* len);
+// Use strdup() to duplicate string:
+// char *caller_res[10];
+// int result_len = 0;
+// get_services(handle, caller_res, 10, &result_len);
+// // Inside the library
+// for(i=0; i < service_array_len; ++i) {
+//   char* svc_name = get_service_by_index(i);
+//   *result = strdup(svc_name); // strdup() does the malloc
+//   *result++;
+// }
 
 /** @brief Invoke a remote service
  *
@@ -163,35 +206,29 @@ char **rvi_get_services(rvi_handle handle);
 int rvi_invoke_remote_service(rvi_handle handle, const char *service_name, 
                               const json_t *parameters);
 
-// ****************
-// ASYNCHRONOUS I/O
-// ****************
 
-/* If a send or receive operation failed, the leftover data will be stored in a
- * buffer and the calling application will receive an error code with a note to
- * send at a later time.
- * 
- * It is the calling application's responsibility to poll before calling either.
- */
+// ******************
+// RVI I/O MANAGEMENT
+// ******************
 
-/** @brief Retry a read operation on a file descriptor.
+/** @brief Handle input on remote connection(s).
  *
- * @param handle - The handle for the RVI context.
- * @param fd - The file descriptor to retry the read operation.
+ * This function will read data from each of the file descriptors in fd_arr (up
+ * to fd_len elements long). The calling application must ensure that fd_arr is
+ * populated only with read-ready descriptors (returned by, e.g., (e)poll() or
+ * select()).
+ *
+ * This is a blocking operation. If any descriptor in fd_arr is not read-ready,
+ * the operation will block until data becomes available to read on the
+ * descriptor.
+ *
+ * @param handle - The handle to the RVI context.
+ * @param fd_arr - An array of file descriptors with read operations pending
+ * @param fd_len - The length of the file descriptor array
  *
  * @return 0 (RVI_OK) on success.
  *         Error code on failure.
  */
-int rvi_retry_read(rvi_handle handle, int fd);
-
-/** @brief Retry a write operation on a file descriptor.
- *
- * @param handle - The handle for the RVI context.
- * @param fd - The file descriptor to retry the write operation.
- *
- * @return 0 (RVI_OK) on success.
- *         Error code on failure.
- */
-int rvi_retry_write(rvi_handle handle, int fd);
+int rvi_process_input(rvi_handle handle, int* fd_arr, int fd_len);
 
 #endif /* _RVI_H */
