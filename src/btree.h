@@ -30,10 +30,12 @@
 #   define LOG(...) printf ( __VA_ARGS__ )
 #   define PRINT_NODE(...) print_single_node ( __VA_ARGS__ )
 #   define PRINT_SUBTREE(...) print_subtree ( __VA_ARGS__ )
+#   define PRINT_DATA(...) printFunction ( __VA_ARGS__ )
 #else
 #   define LOG(...)
 #   define PRINT_NODE(...)
 #   define PRINT_SUBTREE(...)
+#   define PRINT_DATA(...)
 #endif
 
 #ifdef BTREE_TRACE
@@ -149,20 +151,22 @@ extern void     btree_traverse ( btree_t* btree, traverseFunc traverseCB );
 //  The user may iterate forward (to increasing keys) or backward by using the
 //  either the btree_iter_next or btree_iter_previous functions.
 //
-//  Usage (assuming the btree is populated with "userData" records):
+//     Example usage (assuming the btree is populated with "userData" records):
 //
-//      userData record = { 12, "" };
+//         userData record = { 12, "" };
 //
-//      btree_iter iter = btree_find ( btree, &record );
+//         btree_iter iter = btree_find ( &record );
 //
-//      while ( iter != iter->end() )
-//      {
-//          int   xx = iter->key();
-//          char* yy = iter->value();
-//          ...
-//          iter->next();
-//      }
-//      btree_iter_cleanup ( iter );
+//         while ( ! btree_iter_at_end ( iter ) )
+//         {
+//             userData* returnedData = btree_iter_data ( iter );
+//             ...
+//             btree_iter_next ( iter );
+//         }
+//         btree_iter_cleanup ( iter );
+//
+//     The above example will find all of the records in the btree beginning with
+//     { 12, "" } to the end of the btree.
 //
 //  Note that this iterator definition is designed to operate similarly to the
 //  C++ Standard Template Library's container iterators.  There are obviously
@@ -195,8 +199,8 @@ extern btree_iter btree_rfind ( btree_t* btree, void* key );
 extern btree_iter btree_iter_begin ( btree_t* btree );
 
 //
-//  Position the specified itrator to the position the last record in the
-//  btree.
+//  Position the specified itrator to the "end" position in the btree (which
+//  is past the last record of the btree.
 //
 extern btree_iter btree_iter_end ( btree_t* btree );
 
@@ -217,6 +221,11 @@ extern void btree_iter_previous ( btree_iter iter );
 //  the comparison function of the current btree.
 //
 extern int btree_iter_cmp ( btree_iter iter1, btree_iter iter2 );
+
+//
+//  Test to see if the given iterator is at the end of the btree.
+//
+extern bool btree_iter_at_end ( btree_iter iter );
 
 //
 //  Return the pointer to the user data structure that is stored in the btree
@@ -257,6 +266,12 @@ static inline bt_node_t* getLeftChild ( bt_node_t* node, unsigned int index )
 static inline bt_node_t* getRightChild ( bt_node_t* node, unsigned int index )
 {
     return node->children[index + 1];
+}
+
+
+static inline bt_node_t* getDataRecord ( bt_node_t* node, unsigned int index )
+{
+    return node->dataRecords[index];
 }
 
 

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <string.h>
 
 #include "btree.h"
 
@@ -1164,7 +1165,7 @@ del_loop:
         //
         //  Decrement the number of records in the btree.
         //
-        --btree->count;
+//        --btree->count;
 
         return 0;
     }
@@ -1560,30 +1561,22 @@ extern void btree_traverse ( btree_t* tree, traverseFunc traverseCB )
 
 	This section contains the implementation of the btree iterator functions.
 
-	Usage (assuming the btree is populated with "userData" records):
+	Example usage (assuming the btree is populated with "userData" records):
 
 		userData record = { 12, "" };
 
 		btree_iter iter = btree_find ( &record );
 
-		while ( ! iter->end() )
+		while ( ! btree_iter_at_end ( iter ) )
 		{
-			int   xx = iter->key();
-			char* yy = iter->value();
+            userData* returnedData = btree_iter_data ( iter );
 			...
-			iter->next();
+			btree_iter_next ( iter );
 		}
 		btree_iter_cleanup ( iter );
 
-
-	typedef struct btree_iterator_t
-	{
-		btree_t*     btree;
-		nodePosition position;
-
-	}   btree_iterator_t;
-
-	typedef btree_iterator_t* btree_iter;
+    The above example will find all of the records in the btree beginning with
+    { 12, "" } to the end of the btree.
 
 -----------------------------------------------------------------------------*/
 
@@ -1671,13 +1664,23 @@ btree_iter btree_find ( btree_t* btree, void* key )
     int        i     = 0;
     int        index = 0;
 
-    // printFunction ( "  Looking up key:  ", key );
+    PRINT_DATA ( "  Looking up key:  ", key );
 
     //
     //  Go allocate and initialize a new iterator object.
     //
     btree_iter iter = btree_iterator_new ( btree, key );
 
+    //
+    //  If we were not able to allocate a new iterator, report the error and
+    //  return a NULL iterator to the caller.
+    //
+    if ( iter == NULL )
+    {
+        printf ( "ERROR: Unable to allocate new iterator: %d[%s]\n", errno,
+                 strerror ( errno ) );
+        return iter;
+    }
     //
     //  Start at the root of the tree...
     //
@@ -1694,7 +1697,7 @@ btree_iter btree_find ( btree_t* btree, void* key )
         //
         i = 0;
 
-        // printFunction ( "  Current node is: ", node->dataRecords[i] );
+        PRINT_DATA ( "  Current node is: ", node->dataRecords[i] );
 
         //
         //  Search the records in this node beginning from the beginning until
@@ -1876,53 +1879,469 @@ btree_iter btree_find ( btree_t* btree, void* key )
 -----------------------------------------------------------------------------*/
 btree_iter btree_rfind ( btree_t* btree, void* key )
 {
+    printf ( "Warning: btree_rfind was called but is not yet implemented!\n" );
     return NULL;
 }
 
 
-//
-//  Position the specified iterator to the first record in the btree.
-//
+/*!----------------------------------------------------------------------------
+
+    b t r e e _ i t e r _ b e g i n
+
+	@brief Create an iterator positioned at the beginning of the btree.
+
+	This function will find the smallest record currently defined in the
+    specified btree and return an iterator to that record.  If the btree is
+    empty, an iterator will be returned but it will be empty.  This iterator
+    can be compared to the iter->end() iterator to determine if it empty.
+
+    This function will return a new iterator object which the user MUST
+    destroy (via btree_iter_cleanup()) when he is finished with it.
+
+	@param[in] btree - The address of the btree object to be operated on.
+
+	@return A btree_iter object
+
+-----------------------------------------------------------------------------*/
 btree_iter btree_iter_begin ( btree_t* btree )
 {
-    return NULL;
+    btree_iter   iter;
+    nodePosition nodePosition;
+
+    TRACE ( "In btree_iter_begin\n" );
+
+    //
+    //  Go allocate and initialize a new iterator object.
+    //
+    iter = btree_iterator_new ( btree, 0 );
+
+    //
+    //  If we were not able to allocate a new iterator, report the error and
+    //  return a NULL iterator to the caller.
+    //
+    if ( iter == NULL )
+    {
+        printf ( "ERROR: Unable to allocate new iterator: %d[%s]\n", errno,
+                 strerror ( errno ) );
+        return iter;
+    }
+    //
+    //  Go get the minimum key currently defined in the btree.
+    //
+    nodePosition = get_min_key_pos ( btree, btree->root );
+
+    //
+    //  Save the tree position in the new iterator.
+    //
+    iter->index = nodePosition.index;
+    iter->node  = nodePosition.node;
+    iter->key   = nodePosition.node->dataRecords[nodePosition.index];
+
+    LOG ( "  Found minimum record at index %d in node %p\n",
+          nodePosition.index, nodePosition.node );
+
+    PRINT_NODE ( btree, nodePosition.node, printFunction );
+
+    //
+    //  Return the iterator to the caller.
+    //
+    return iter;
 }
 
-//
-//  Position the specified itrator to the position the last record in the
-//  btree.
-//
+
+/*!----------------------------------------------------------------------------
+
+    b t r e e _ i t e r _ e n d
+
+	@brief Create an iterator positioned past the last record of the btree.
+
+	This function will create a new iterator and set it to indicate that is is
+    an "end" iterator.
+
+    This function will return a new iterator object which the user MUST
+    destroy (via btree_iter_cleanup()) when he is finished with it.
+
+	@param[in] btree - The address of the btree object to be operated on.
+
+	@return A btree_iter object
+
+-----------------------------------------------------------------------------*/
 btree_iter btree_iter_end ( btree_t* btree )
 {
-    return NULL;
+    btree_iter   iter;
+
+    TRACE ( "In btree_iter_end\n" );
+
+    //
+    //  Go allocate and initialize a new iterator object.
+    //
+    iter = btree_iterator_new ( btree, 0 );
+
+    //
+    //  If we were not able to allocate a new iterator, report the error and
+    //  return a NULL iterator to the caller.
+    //
+    if ( iter == NULL )
+    {
+        printf ( "ERROR: Unable to allocate new iterator: %d[%s]\n", errno,
+                 strerror ( errno ) );
+        return iter;
+    }
+    //
+    //  Initialize the iterator to indicate the "end" position.
+    //
+    iter->index = -1;
+    iter->node  = NULL;
+
+    //
+    //  Return the iterator to the caller.
+    //
+    return iter;
 }
 
-//
-//  Position the specified iterator to the next higher key value in the btree
-//  from the current position.
-//
+
+/*!----------------------------------------------------------------------------
+
+    b t r e e _ i t e r _ n e x t
+
+	@brief Get the "next" position in the btree.
+
+    This function will position the specified iterator to the next higher key
+    value in the btree from the current position.
+
+    This function will use the position defined in the supplied iterator as
+    the starting point in the btree and proceed to move to the "next" higher
+    record in the btree.  Note that "next" is defined by the user's supplied
+    comparison operator for this btree.
+
+    TODO: This function needs to be cleaned up.  It was patched several times
+    to make it work and left in a bit of a mess.
+
+	@param[in,out] iter - The iterator to be updated
+
+	@return None
+
+-----------------------------------------------------------------------------*/
 void btree_iter_next ( btree_iter iter )
 {
+    TRACE ( "In btree_iter_next: node[%p], index[%d]\n", iter->node, iter->index );
 
+    //
+    //  Set the internal variables so that we will start searching where the
+    //  current iterator points.
+    //
+    btree_t*     btree = iter->btree;
+    bt_node_t*   node  = iter->node;
+    void*        key   = iter->key;
+    void*        dataValue;
+    int          diff  = 0;
+    int          i     = iter->index;
+    int          index = 0;
+    nodePosition nodePos;
+
+    //
+    //  Print out the target key that we are starting at.
+    //
+    PRINT_DATA ( "  Looking up key:  ", key );
+
+    //
+    //  Repeat forever...
+    //
+    while ( true )
+    {
+        //
+        //  If this is a leaf node...
+        //
+        if ( node->leaf )
+        {
+            //
+            //  Loop through the records in this node until reach the end of
+            //  the node...
+            //
+            i = 0;
+            PRINT_DATA ( "  Current leaf node is: ", node->dataRecords[i] );
+            while ( i < node->keysInUse )
+            {
+                //
+                //  Compare the current record with our target.
+                //
+                index = i;
+                diff = btree->compareCB ( key, node->dataRecords[i] );
+                LOG ( "  Searching node at %d, diff: %d\n", i, diff );
+
+                //
+                //  If the current record is larger than the target we have
+                //  found the "next" record in the btree so return it to the
+                //  caller.
+                //
+                if ( diff < 0 )
+                {
+                    LOG ( "  Target record found.\n" );
+                    iter->index = i;
+                    iter->node  = node;
+                    iter->key   = node->dataRecords[i];
+                    return;
+                }
+                ++i;
+            }
+            //
+            //  If none of the records in this node are larger than the
+            //  target, go up one level in the btree to the parent node and
+            //  try again.
+            //
+            //  If we are not at the root node...
+            //
+            if ( node->parent != NULL )
+            {
+                LOG ( "  Moving up to parent.\n" );
+                i    = 0;
+                node = node->parent;
+            }
+            //
+            //  If we are at the root node then the target is larger than the
+            //  largest record in the btree so return an "end" condition to
+            //  the caller.
+            //
+            else
+            {
+                LOG ( "  End of tree found.\n" );
+                iter->index = -1;
+                iter->node  = NULL;
+                iter->key   = NULL;
+                return;
+            }
+            //
+            //  Go back up and start looking at the records in the node...
+            //
+            continue;
+        }
+        //
+        //  If the current node is an interior node (i.e. not a leaf node)...
+        //
+        i = 0;
+        PRINT_DATA ( "  Current interior node is: ", node->dataRecords[i] );
+
+        //
+        //  Examine all of the records until we reach the end of the records
+        //  in this node.
+        //
+        while ( i < node->keysInUse )
+        {
+            //
+            //  Compare the current record with the target record.
+            //
+            index = i;
+            diff = btree->compareCB ( key, node->dataRecords[i] );
+            LOG ( "  Searching node at %d, diff: %d\n", i, diff );
+
+            //
+            //  If the current record is larger than the target...
+            //
+            if ( diff < 0 )
+            {
+                //
+                //  Go find the smallest record in the left subtree of this
+                //  record.
+                //
+                LOG ( "  Searching for minimum subtree key in left child.\n" );
+                nodePos = get_min_key_pos ( btree, node->children[i] );
+
+                //
+                //  If this minimum value is larger than the target then that's
+                //  the "next" record.
+                //
+                dataValue = getDataRecord ( nodePos.node, nodePos.index );
+                diff = btree->compareCB ( key, dataValue );
+                if ( diff < 0 )
+                {
+                    //
+                    //  Return this record to the caller.
+                    //
+                    PRINT_DATA ( "    Found: ", nodePos.node );
+                    iter->index = nodePos.index;
+                    iter->node  = nodePos.node;
+                    iter->key   = dataValue;
+                    return;
+                }
+                //
+                //  If the left subtree doesn't have the record we want then
+                //  it must be the current record so return that to the
+                //  caller.
+                //
+                else
+                {
+                    LOG ( "  Target record found.\n" );
+                    iter->index = i;
+                    iter->node  = node;
+                    iter->key   = node->dataRecords[i];
+                    return;
+                }
+            }
+            ++i;
+        }
+        //
+        //  If we have just exhausted the list of records in the current
+        //  node...
+        //
+        if ( i == node->keysInUse )
+        {
+            //
+            //  We need to decide if we need to go up or down the btree from
+            //  here so find the largest record in the right subtree.
+            //
+            nodePos = get_max_key_pos ( btree, node->children[i] );
+            dataValue = getDataRecord ( nodePos.node, nodePos.index );
+            diff = btree->compareCB ( key, dataValue );
+
+            //
+            //  If there are no records in the right subtree that are larger
+            //  than the target then we need to move up in the btree to the
+            //  parent to continue our search.
+            //
+            if ( diff >= 0 )
+            {
+                //
+                //  If this is not the root node then move up in the btree.
+                //
+                if ( node->parent != NULL )
+                {
+                    LOG ( "  Moving up to parent.\n" );
+                    i    = 0;
+                    node = node->parent;
+                }
+                //
+                //  If this is the root node then the target record is larger
+                //  than everything in the btree so return an "end" condition
+                //  to the caller.
+                //
+                else
+                {
+                    LOG ( "  End of tree found.\n" );
+                    iter->index = -1;
+                    iter->node  = NULL;
+                    iter->key   = NULL;
+                    return;
+                }
+            }
+            //
+            //  There are some records in the right subtree greater than the
+            //  target so go find the smallest of those records.
+            //
+            else
+            {
+                LOG ( "  Searching for minimum subtree key.\n" );
+                nodePos = get_min_key_pos ( btree, node->children[i] );
+
+                //
+                //  If the smallest record in this subtree is larger than our
+                //  target key then we have found the "next" record and we
+                //  will return that to the caller.
+                //
+                dataValue = getDataRecord ( nodePos.node, nodePos.index );
+                diff = btree->compareCB ( key, dataValue );
+                if ( diff < 0 )
+                {
+                    PRINT_DATA ( "    Found: ", nodePos.node );
+                    iter->index = nodePos.index;
+                    iter->node  = nodePos.node;
+                    iter->key   = dataValue;
+                    return;
+                }
+                //
+                //  If everything in the right subtree is smaller than our
+                //  target, decend into the right tree and continue our search
+                //  from there.
+                //
+                else
+                {
+                    LOG ( "  Moving down to the right child.\n" );
+                    node = getRightChild ( node, index );
+                    i    = 0;
+                }
+            }
+        }
+        continue;
+    }
+    //
+    //  If we have found the "next" record, print that out in debug mode.
+    //
+    if ( iter->node != 0 )
+    {
+        LOG ( "  Found index %d:\n", iter->index );
+        PRINT_NODE ( btree, iter->node, printFunction );
+    }
+    //
+    //  Return to the caller now that we have updated the iterator to point
+    //  to the "next" record in the btree.
+    //
     return;
 }
 
-//
-//  Position the specified iterator to the next lower key value in the btree
-//  from the current position.
-//
+
+/*!----------------------------------------------------------------------------
+
+    b t r e e _ i t e r _ p r e v i o u s
+
+	@brief Position the iterator at the previous key in the btree.
+
+    This function will position the specified iterator to the next lower key
+    value in the btree from the current position.
+
+	@param[in,out] iter - The iterator to be updated
+
+	@return None
+
+-----------------------------------------------------------------------------*/
 void btree_iter_previous ( btree_iter iter )
 {
+    printf ( "Warning: btree_iter_previous was called but is not yet "
+             "implemented!\n" );
     return;
 }
 
-//
-//  Compare the 2 iterators and return their relative values as determined by
-//  the comparison function of the current btree.
-//
+
+/*!----------------------------------------------------------------------------
+
+    b t r e e _ i t e r _ c m p
+
+	@brief Compare 2 iterators.
+
+	This function will compare the data records using the user supplied
+    comparison function of the two supplied iterators.
+
+	@param[in] iter1 - The first position to be tested.
+	@param[in] iter2 - The second position to be tested.
+
+	@return < 0  - iter2 is greater than iter1.
+            == 0 - The iterators are identical.
+            > 0  - iter2 is less than iter1.
+
+-----------------------------------------------------------------------------*/
 int btree_iter_cmp ( btree_iter iter1, btree_iter iter2 )
 {
-    return 0;
+    return iter1->btree->compareCB ( iter1->node->dataRecords[iter1->index],
+                                     iter2->node->dataRecords[iter2->index] );
+}
+
+
+/*!----------------------------------------------------------------------------
+
+    b t r e e _ i t e r _ a t _ e n d
+
+	@brief Determine if this iterator is at the "end" condition.
+
+	This function will determine if the input iterator is currently positioned
+    at the "end" of the btree and return a "true" if it is.
+
+	@param[in] iter - The iterator to be tested.
+
+	@return true  - The iterator is at the "end" of the btree.
+            false - The iterator is not at the "end" of the btree.
+
+-----------------------------------------------------------------------------*/
+bool btree_iter_at_end ( btree_iter iter )
+{
+    return ( iter == NULL || iter->node == NULL );
 }
 
 
@@ -1952,7 +2371,7 @@ void* btree_iter_data ( btree_iter iter )
     //
     //  If this is not a valid iterator, return a NULL to the caller.
     //
-    if ( iter == 0 || iter->node == 0 )
+    if ( btree_iter_at_end ( iter ) )
     {
         return NULL;
     }
@@ -2075,7 +2494,7 @@ static void print_single_node ( btree_t* btree, bt_node_t* node,
     }
     fflush ( stdout );
 }
-#endif
+#endif      // ifdef BTREE_DEBUG
 
 /**
 *       Function used to print the B-tree
@@ -2131,11 +2550,11 @@ void print_subtree ( btree_t* btree, bt_node_t* node, printFunc printCB )
         head = head->next;
     }
     printf ( "\n" );
-#endif
+#endif      // ifdef BTREE_DEBUG
 }
 
 
-#if 0
+#ifdef EXAMPLE_ONLY
 /*!----------------------------------------------------------------------------
 
     The following functions are here as an example of a set of "validation"
@@ -2148,7 +2567,6 @@ void print_subtree ( btree_t* btree, bt_node_t* node, printFunc printCB )
     created, the domainId is set to 3 (since the counters start at zero).
 
 -----------------------------------------------------------------------------*/
-
 //
 //  Validation functions.
 //
@@ -2248,4 +2666,4 @@ static void validateBtree ( btree_t* btree, int maxSize, bool reportMissing )
     validateCleanup();
 }
 
-#endif
+#endif      // ifdef EXAMPLE_ONLY
