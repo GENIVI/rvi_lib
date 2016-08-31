@@ -24,17 +24,19 @@
 
 #include <dirent.h>
 #include <errno.h>
-#include <regex.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <time.h>
+
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
 
+#include <jwt.h>
+
 #include "rvi.h"
 #include "btree.h"
 
-#define MAXBUFLEN 10000000
 
 /* *************** */
 /* DATA STRUCTURES */
@@ -78,19 +80,19 @@ typedef struct rvi_context_t {
     SSL_CTX *ssl_ctx;
 
     /* own right_to_register */
-    regex_t *right_to_register;
+    json_t *right_to_register;
     /* own right_to_invoke */
-    regex_t *right_to_invoke;
+    json_t *right_to_invoke;
 } rvi_context_t, *rvi_context_p;
 
 /** @brief Data for connection to remote node */
 typedef struct rvi_remote_t {
     /** File descriptor for the connection */
     int fd;
-    /** Regex(es) for remote node's right(s) to register */
-    regex_t *right_to_register;
-    /** Regex(es) for remote node's right(s) to invoke */
-    regex_t *right_to_invoke;
+    /** json array for remote node's right(s) to register */
+    json_t *right_to_register;
+    /** json array for remote node's right(s) to invoke */
+    json_t *right_to_invoke;
     /** Pointer to data buffer for partial I/O operations */
     void *buf;
     /** Pointer to BIO chain from OpenSSL library */
@@ -141,6 +143,12 @@ SSL_CTX *setup_client_ctx ( rvi_handle handle );
 int parse_config ( rvi_handle handle, const char * filename );
 
 int read_json_config ( rvi_handle handle, const char * filename );
+
+int validate_credential( rvi_handle handle, char *cred );
+
+int get_credential_rights( 
+        char *cred, char **right_to_reg, char **right_to_inv 
+        );
 
 /****************************************************************************/
 
@@ -217,8 +225,9 @@ rvi_service_t *rvi_service_create ( const char *name, const int registrant,
     /* Set the callback. NULL is valid. */
     service->callback = callback;
 
-    /* TODO: Walk the tree of remotes to check for matches in may_register and */
-    /* may_invoke to add to array */
+    /* TODO: Walk the tree of remotes to check for matches in may_register and
+     * may_invoke to add to array 
+     */
 
     /* Return the address of the new service */
     return service;
@@ -531,7 +540,9 @@ int read_json_config ( rvi_handle handle, const char * filename )
             } else {
                 cred[len++] = '\0'; /* Ensure string is null-terminated */
             }
-            ctx->cred[i] = strdup( cred );
+            if( validate_credential( handle, cred ) == RVI_OK ) {
+                ctx->cred[i] = strdup( cred );
+            }
             free(cred);
             fclose( fp );
             i++;
@@ -541,6 +552,83 @@ int read_json_config ( rvi_handle handle, const char * filename )
     closedir( d );
 
     return RVI_OK;
+}
+
+/** 
+ * This function tests whether a credential is valid.
+ *
+ * Tests:
+ *  * Signed by trusted authority
+ *  * TODO: Current time falls in range specified by "validity"
+ *
+ * Returns RVI_OK (0) on success, or an error code on failure.
+ */
+int validate_credential( rvi_handle handle, char *cred )
+{
+    if( !handle || !cred )
+        return EINVAL;
+
+    int             ret         = RVI_ERROR_NOCRED;
+    rvi_context_p   ctx         = (rvi_context_p)handle;
+    EVP_PKEY        *pkey       = NULL;
+    BIO             *certbio    = NULL;
+    BIO             *mbio       = NULL;
+    X509            *cert       = NULL;
+    unsigned char   *key        = NULL;
+    jwt_t           *jwt;
+    long            length;
+
+    /* Get public key from root certificate */
+    /* First, load root certificate into memory */
+    if( !( certbio = BIO_new_file(ctx->cafile, "r") ) ) {
+        ret = ENOMEM; 
+        goto exit;
+    }
+    if( !( cert = PEM_read_bio_X509(certbio, NULL, 0, NULL) ) ) {
+        ret = 1; /* TODO: More informative error? */
+        goto exit; 
+    }
+    if( !( pkey = X509_get_pubkey(cert) ) ) {
+        ret = 1; /* TODO: More informative error? */
+        goto exit;
+    }
+    if( !( mbio = BIO_new(BIO_s_mem() ) ) ) {
+        ret = ENOMEM;
+        goto exit;
+    }
+    if( (ret = PEM_write_bio_PUBKEY(mbio, pkey)) <= 0 ) {
+        goto exit;
+    }
+
+    length = EVP_PKEY_bits(pkey);
+    key = malloc(length);
+
+    if( (ret = BIO_read(mbio, key, length)) <= 0) {
+        goto exit;
+    }
+
+    if( (ret = jwt_decode( &jwt, cred, key, strlen( (char *)key ) ) ) ) {
+        goto exit;
+    }
+
+    if( jwt_get_alg( jwt ) == JWT_ALG_NONE ) {
+        ret = 1; /* TODO: More informative error? */
+        goto exit;
+    }
+
+    /* TODO: Check validity: start/stop */
+
+    ret = RVI_OK;
+
+exit:
+    jwt_free(jwt);
+    EVP_PKEY_free(pkey);
+    X509_free(cert);
+    BIO_free_all(certbio);
+    BIO_free_all(mbio);
+    free(key);
+
+    return ret;
 }
 
 /** @brief Initialize the RVI library. Call before using any other functions.
@@ -603,31 +691,31 @@ rvi_handle rvi_init ( char *config_filename )
         return NULL;
     }
 
-    /*  */
-    /* Create empty btrees for indexing remote connections and services. */
-    /* */
-    /* Since we expect that records will frequently be added and removed, use a */
-    /* small order for each tree. This means that the tree will be deeper, but */
-    /* addition/deletion will usually result in simply changing pointers rather */
-    /* than copying data. */
-    /* */
+    /*  
+     * Create empty btrees for indexing remote connections and services. 
+     * 
+     * Since we expect that records will frequently be added and removed, use a 
+     * small order for each tree. This means that the tree will be deeper, but 
+     * addition/deletion will usually result in simply changing pointers rather 
+     * than copying data. 
+     */
     
-    /* */
-    /* Remote connections will be indexed by the socket's file descriptor. */
-    /* */
+    /*   
+     * Remote connections will be indexed by the socket's file descriptor.    
+     */  
     ctx->remote_idx = btree_create(2, compare_fd);
 
-    /* */
-    /* Services will be indexed by the fully-qualified service name, which is */
-    /* unique across the RVI infrastructure. */
-    /* */
+    /*   
+     * Services will be indexed by the fully-qualified service name, which is
+     * unique across the RVI infrastructure. 
+     */  
     ctx->service_name_idx = btree_create(2, compare_name);
 
-    /* */
-    /* Services will also be indexed by the file descriptor of the entity */
-    /* registering the service. Service names are used as a tie-breaker to */
-    /* ensure each record has a unique position in the tree. */
-    /* */
+    /*
+     * Services will also be indexed by the file descriptor of the entity 
+     * registering the service. Service names are used as a tie-breaker to 
+     * ensure each record has a unique position in the tree. 
+     */
     ctx->service_reg_idx = btree_create(2, compare_registrant);
     
     return (rvi_handle)ctx;
@@ -655,16 +743,16 @@ int rvi_cleanup(rvi_handle handle)
     /* free all SSL structs */
     SSL_CTX_free(ctx->ssl_ctx);
 
-    /*  */
-    /* Destroy each tree, including all structs pointed to */
-    /* */
+    /*  
+     * Destroy each tree, including all structs pointed to 
+     */
     
-    /*  */
-    /* As long as the context contains remote connections, find the first */
-    /* struct in the tree, and disconnect the corresponding file descriptor. */
-    /* The disconnect function removes the entry from the tree and frees the */
-    /* underlying memory. */
-    /*  */
+    /*  
+     * As long as the context contains remote connections, find the first 
+     * struct in the tree, and disconnect the corresponding file descriptor. 
+     * The disconnect function removes the entry from the tree and frees the 
+     * underlying memory. 
+     */
     while(ctx->remote_idx->count != 0) {
         rkey.fd = 0;
         if((iter = btree_find(ctx->remote_idx, &rkey))) {
@@ -673,19 +761,19 @@ int rvi_cleanup(rvi_handle handle)
                 perror("Getting remote data in cleanup"); 
                 break;
             }
-            /* Disconnect the remote SSL connection, delete the entry from the */
-            /* tree & free the remote struct */
+            /* Disconnect the remote SSL connection, delete the entry from the 
+             * tree & free the remote struct */
             rvi_disconnect(handle, rtmp->fd);
         }
         free(iter);
     }
     btree_destroy(ctx->remote_idx);
 
-    /* */
-    /* As long as the context contains services, find the first struct from */
-    /* either service tree. Delete the entry from each service tree, then free */
-    /* the underlying memory. */
-    /* */
+    /* 
+     * As long as the context contains services, find the first struct from 
+     * either service tree. Delete the entry from each service tree, then free 
+     * the underlying memory. 
+     */
     while(ctx->service_name_idx->count != 0) {
         skey.name = "";
         if (( iter = btree_find ( ctx->service_name_idx, &skey ))) {
@@ -858,9 +946,9 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
         out = BIO_new_fp(stdout, BIO_NOCLOSE);
         BIO_write(out, tmpbuf, len);
         BIO_free(out);
-        /*      parse right_to_register to regex_t */
+        /*      parse right_to_register to json_t */
         /*      set remote->right_to_register to returned value */
-        /*      parse right_to_invoke to regex_t */
+        /*      parse right_to_invoke to json_t */
         /*      set remote->right_to_invoke to returned value */
     }
 
