@@ -29,6 +29,8 @@ int main(int argc, char *argv[])
 
     myHandle = rvi_init(argv[1]);
 
+    if( !myHandle ) exit(1);
+
     stat = rvi_connect(myHandle, "192.168.18.76", "9007");
     printf("\nstat after connect is %d\n", stat);
 

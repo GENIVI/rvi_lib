@@ -39,7 +39,7 @@
 typedef void *rvi_handle;
 
 /** Function signature for RVI callback functions */
-typedef void (*rvi_callback_t) (int fd, void* service_data, json_t *);
+typedef void (*rvi_callback_t) (int fd, void* service_data, json_t *parameters);
 
 /** Function return status codes */
 typedef enum {
@@ -113,10 +113,6 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port);
  *         Error code on failure.
  */
 int rvi_disconnect(rvi_handle handle, int fd);
-
-// Separate call to disconnect multiple file descriptors:
-// int rvi_disconnect_multiple(rvi_handle handle, int* fd, int fd_len);
-
 
 /** @brief Return all file descriptors in the RVI context
  *

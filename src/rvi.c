@@ -37,6 +37,7 @@
 #include "rvi.h"
 #include "btree.h"
 
+#define BUFLEN 4096
 
 /* *************** */
 /* DATA STRUCTURES */
@@ -60,27 +61,17 @@ typedef struct rvi_context_t {
     char *certfile; /* File containing X.509 public key certificate (PKC) */
     char *keyfile;  /* File containing corresponding private key */
     char *cafile;   /* File containing CA public key certificate(s) */
-    /* Note: certfile, keyfile, and cafile may all point to the same file. If 
-     * so, it must be .PEM with base64-encoded values. The order must be ONE 
-     * of the following: 
-     *      1. Device PKC, device key, intermediate CA PKC(s), root CA PKC 
-     *      2. Device key, device PKC, intermediate CA PKC(s), root CA PKC 
-     * Only the first private key in a file will be used. All others will be 
-     * ignored. 
-     */
-
 
     /* Array of RVI credentials loaded into memory for quick access when 
-     * negotiating connections 
-     */
+     * negotiating connections */
     char **cred;
 
     /* SSL context for spawning new sessions.  */
     /* Contains X509 certs, config settings, etc */
     SSL_CTX *ssl_ctx;
 
-    /* own right_to_register */
-    json_t *right_to_register;
+    /* own right_to_receive */
+    json_t *right_to_receive;
     /* own right_to_invoke */
     json_t *right_to_invoke;
 } rvi_context_t, *rvi_context_p;
@@ -90,7 +81,7 @@ typedef struct rvi_remote_t {
     /** File descriptor for the connection */
     int fd;
     /** json array for remote node's right(s) to register */
-    json_t *right_to_register;
+    json_t *right_to_receive;
     /** json array for remote node's right(s) to invoke */
     json_t *right_to_invoke;
     /** Pointer to data buffer for partial I/O operations */
@@ -140,15 +131,14 @@ SSL_CTX *setup_client_ctx ( rvi_handle handle );
 
 /* Additional utility functions */
 
-int parse_config ( rvi_handle handle, const char * filename );
-
 int read_json_config ( rvi_handle handle, const char * filename );
+
+char *get_pubkey_file( char *filename );
 
 int validate_credential( rvi_handle handle, char *cred );
 
-int get_credential_rights( 
-        char *cred, char **right_to_reg, char **right_to_inv 
-        );
+int get_credential_rights( rvi_handle handle, char *cred, 
+                           json_t **rec_arr, json_t **inv_arr );
 
 /****************************************************************************/
 
@@ -275,7 +265,7 @@ rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd )
     remote->fd = fd;
     remote->sbio = sbio;
 
-    /* Note that we do NOT need to populate right_to_register or 
+    /* Note that we do NOT need to populate right_to_receive or 
      * right_to_invoke at this time. Those will be populated by parsing the au 
      * message. */
 
@@ -294,7 +284,7 @@ void rvi_remote_destroy ( rvi_remote_t *remote)
     }
 
     BIO_free_all ( remote->sbio );
-    free ( remote->right_to_register );
+    free ( remote->right_to_receive );
     free ( remote->right_to_invoke );
     free ( remote->buf );
     free ( remote );
@@ -366,94 +356,22 @@ SSL_CTX *setup_client_ctx ( rvi_handle handle )
         return NULL;
     }
 
-    /* Set internal callback for peer verification on SSL connection attempts. */
+    /* Set internal callback for peer verification on SSL connection attempts.
+     */
     SSL_CTX_set_verify ( ssl_ctx, SSL_VERIFY_PEER, ssl_verify_callback );
 
-    /* Set the maximum depth for certificates to be used. Additional */
-    /* certificates are ignored. Error messages will be generated as if the */
-    /* certificates are not present. */
-    /* */
-    /* Permits a maximum of 4 CA certificates, i.e., 3 intermediate CAs and the */
-    /* root CA. */
+    /* Set the maximum depth for certificates to be used. Additional
+     * certificates are ignored. Error messages will be generated as if the
+     * certificates are not present. 
+     * 
+     * Permits a maximum of 4 CA certificates, i.e., 3 intermediate CAs and the
+     * root CA. 
+     */
     SSL_CTX_set_verify_depth ( ssl_ctx, 4 );
 
     return ssl_ctx;
 }
-
-/**
- * This function will parse a flat (sysctl-style) configuration file to
- * retrieve the filenames for the device certificate and key, as well as the
- * directory names for CA certificates and RVI credentials.
- *
- * On success, this function returns 0. On error, it will return a positive
- * error code.
- */
-int parse_config ( rvi_handle handle, const char * filename )
-{
-    if ( !handle || !filename ) {
-        return EINVAL;
-    }
-
-    rvi_context_t * ctx;
-    char            key[100] = {0};
-    char            val[100] = {0};
-    char            cred[2048] = {0};
-    FILE *          fp;
-    DIR *           d;
-    struct dirent * dir;
-
-    ctx = (rvi_context_t *)handle;
-
-    fp = fopen ( filename, "r" );
-
-    if ( !fp ) {
-        return errno;
-    }
-
-    while ( fscanf ( fp, "%s = %s", key, val ) == 2 ) {
-        if ( strcmp ( key, "device.key" ) == 0 ) {
-            ctx->keyfile = strdup ( val );
-        } else if ( strcmp ( key, "device.cert" ) == 0 ) {
-            ctx->certfile = strdup ( val );
-        } else if ( strcmp ( key, "ca.dir" ) == 0 ) {
-            ctx->cadir = strdup ( val );
-        } else if ( strcmp ( key, "cred.dir" ) == 0 ) {
-            ctx->creddir = strdup ( val );
-        } else if ( strcmp ( key, "ca.cert" ) == 0 ) {
-            ctx->cafile = strdup ( val );
-        }
-
-        memset ( key, 0, 100 );
-        memset ( val, 0, 100 );
-    }
-
-    fclose ( fp );
-    
-    if ( !(ctx->creddir) ) {
-        return RVI_ERROR_NOCRED;
-    }
-
-    d = opendir ( ctx->creddir );
-    if ( !d ) {
-        return RVI_ERROR_NOCRED;
-    }
-
-    int i = 0;
-    while ( ( dir = readdir ( d ) ) != NULL ) {
-        if ( strstr ( dir->d_name, ".jwt" ) != NULL ) {
-            fp = fopen ( dir->d_name, "r" );
-            fscanf ( fp, "%s", cred);
-            ctx->cred[i] = strdup ( cred );
-            i++;
-            fclose ( fp );
-        }
-    }
-
-    closedir ( d );
-
-    return RVI_OK;
-}
-
+ 
 /**
  * This function will parse a JSON configuration file to retrieve the filenames
  * for the device certificate and key, as well as the directory names for CA
@@ -554,6 +472,112 @@ int read_json_config ( rvi_handle handle, const char * filename )
     return RVI_OK;
 }
 
+/** Get arrays of right_to_receive and right_to_invoke */
+int get_credential_rights( rvi_handle handle, char *cred, 
+                           json_t **rec_arr, json_t **inv_arr )
+{
+    if( !handle || !cred || !rec_arr || !inv_arr )
+        return EINVAL;
+
+    rvi_context_p   ctx = (rvi_context_p)handle;
+    jwt_t           *jwt;
+    json_error_t    jsonerr;
+    char            *key;
+    int             ret;
+
+    if( !( key = get_pubkey_file( ctx->cafile ) ) ) {
+        ret = -1;
+        goto exit;
+    }
+
+    ret = jwt_decode(&jwt, cred, (unsigned char *)key, strlen(key));
+
+    char *rcv = jwt_get_grant( jwt, "right_to_receive" );
+
+    *rec_arr = json_loads( rcv, 0, &jsonerr );
+
+    free( rcv );
+
+    char *inv = jwt_get_grant( jwt, "right_to_invoke" );
+
+    *inv_arr = json_loads( inv, 0, &jsonerr );
+
+    free( inv );
+
+    if (ret != 0) 
+        goto exit;
+
+exit:
+    free(key);
+    jwt_free(jwt);
+
+    return ret;
+}
+
+/** Get the public key from a certificate file */
+char *get_pubkey_file( char *filename )
+{
+    if( !filename )
+        return NULL;
+
+    EVP_PKEY    *pkey       = NULL;
+    BIO         *certbio    = NULL;
+    BIO         *mbio       = NULL;
+    X509        *cert       = NULL;
+    char        *key;
+    long        length;
+    int         ret = RVI_OK;
+
+    /* Get public key from root certificate */
+    /* First, load root certificate into memory */
+    if( !( certbio = BIO_new_file( filename, "r" ) ) ) {
+        ret = ENOMEM; 
+        goto exit;
+    }
+    if( !( cert = PEM_read_bio_X509( certbio, NULL, 0, NULL ) ) ) {
+        ret = 1; 
+        goto exit; 
+    }
+    if( !( pkey = X509_get_pubkey(cert) ) ) {
+        ret = 1; 
+        goto exit;
+    }
+    if( !( mbio = BIO_new(BIO_s_mem() ) ) ) {
+        ret = ENOMEM;
+        goto exit;
+    }
+    ret = PEM_write_bio_PUBKEY(mbio, pkey);
+    if( ret == 0 ) {
+        ret = RVI_ERROR_OPENSSL;
+        goto exit;
+    }
+
+    length = BIO_ctrl_pending(mbio);
+    if( !( key = malloc( length + 1 ) ) ) {
+        ret = ENOMEM;
+        goto exit;
+    }
+
+    if( (ret = BIO_read(mbio, key, length)) != length) {
+        goto exit;
+    }
+
+    key[length] = '\0';
+
+    ret = RVI_OK;
+
+exit:
+    EVP_PKEY_free(pkey);
+    X509_free(cert);
+    BIO_free_all(certbio);
+    BIO_free_all(mbio);
+
+    if( ret != RVI_OK )
+        return NULL;
+    else
+        return key;
+}
+
 /** 
  * This function tests whether a credential is valid.
  *
@@ -568,51 +592,27 @@ int validate_credential( rvi_handle handle, char *cred )
     if( !handle || !cred )
         return EINVAL;
 
-    int             ret         = RVI_ERROR_NOCRED;
-    rvi_context_p   ctx         = (rvi_context_p)handle;
-    EVP_PKEY        *pkey       = NULL;
-    BIO             *certbio    = NULL;
-    BIO             *mbio       = NULL;
-    X509            *cert       = NULL;
-    unsigned char   *key        = NULL;
+    int             ret;
+    rvi_context_p   ctx = (rvi_context_p)handle;
+    char            *key;
     jwt_t           *jwt;
     long            length;
 
-    /* Get public key from root certificate */
-    /* First, load root certificate into memory */
-    if( !( certbio = BIO_new_file(ctx->cafile, "r") ) ) {
-        ret = ENOMEM; 
-        goto exit;
-    }
-    if( !( cert = PEM_read_bio_X509(certbio, NULL, 0, NULL) ) ) {
-        ret = 1; /* TODO: More informative error? */
-        goto exit; 
-    }
-    if( !( pkey = X509_get_pubkey(cert) ) ) {
-        ret = 1; /* TODO: More informative error? */
-        goto exit;
-    }
-    if( !( mbio = BIO_new(BIO_s_mem() ) ) ) {
-        ret = ENOMEM;
-        goto exit;
-    }
-    if( (ret = PEM_write_bio_PUBKEY(mbio, pkey)) <= 0 ) {
+    key = get_pubkey_file( ctx->cafile );
+
+    if( !key ) {
+        ret = -1;
         goto exit;
     }
 
-    length = EVP_PKEY_bits(pkey);
-    key = malloc(length);
+    length = strlen(key) + 1;
 
-    if( (ret = BIO_read(mbio, key, length)) <= 0) {
+    if( ( ret = jwt_decode( &jwt, cred, (unsigned char *)key, length ) ) ) {
         goto exit;
     }
 
-    if( (ret = jwt_decode( &jwt, cred, key, strlen( (char *)key ) ) ) ) {
-        goto exit;
-    }
-
-    if( jwt_get_alg( jwt ) == JWT_ALG_NONE ) {
-        ret = 1; /* TODO: More informative error? */
+    if( jwt_get_alg( jwt ) != JWT_ALG_RS256 ) {
+        ret = 1; 
         goto exit;
     }
 
@@ -622,11 +622,7 @@ int validate_credential( rvi_handle handle, char *cred )
 
 exit:
     jwt_free(jwt);
-    EVP_PKEY_free(pkey);
-    X509_free(cert);
-    BIO_free_all(certbio);
-    BIO_free_all(mbio);
-    free(key);
+    if(key) free(key);
 
     return ret;
 }
@@ -665,8 +661,8 @@ rvi_handle rvi_init ( char *config_filename )
     }
     ctx = memset ( ctx, 0, sizeof ( rvi_context_t ) );
 
-    /* Allocate a block of memory for storing credentials, then initialize each */
-    /* pointer to null */
+    /* Allocate a block of memory for storing credentials, then initialize each 
+     * pointer to null */
     ctx->cred = malloc ( 20 * sizeof ( char * ));
     int i;
     for ( i = 0; i < 20; i ++) {
@@ -676,19 +672,26 @@ rvi_handle rvi_init ( char *config_filename )
     /* parse config file */
     /* need: device cert; root cert; device key; credential */
     
-    //if ( parse_config ( ctx, "rvi.config" ) != 0 ) {
-    if ( read_json_config ( ctx, "conf.json" ) != 0 ) {
+    if ( read_json_config ( ctx, config_filename ) != 0 ) {
         fprintf(stderr, "Error reading config file\n");
-        free(ctx->cred);
-        free(ctx);
-        return NULL;
+        goto err;
+    }
+
+    i = 0;
+    while( ctx->cred[i] != NULL ) {
+        int ret = get_credential_rights( ctx, ctx->cred[i], 
+                &ctx->right_to_receive, &ctx->right_to_invoke
+                );
+        if( ret != RVI_OK )
+            goto err;
+        i++;
     }
 
     /* Create generic SSL context configured for client access */
     ctx->ssl_ctx = setup_client_ctx(ctx);
     if(!ctx->ssl_ctx) {
         fprintf(stderr, "Error setting up SSL context\n");
-        return NULL;
+        goto err;
     }
 
     /*  
@@ -719,6 +722,12 @@ rvi_handle rvi_init ( char *config_filename )
     ctx->service_reg_idx = btree_create(2, compare_registrant);
     
     return (rvi_handle)ctx;
+
+err:
+    free(ctx->cred);
+    free(ctx);
+
+    return NULL;
 }
 
 /** @brief Tear down the API.
@@ -794,16 +803,12 @@ int rvi_cleanup(rvi_handle handle)
         }
     }
 
-    /* */
     /* Both trees should now be empty, so destroy the trees */
-    /* */
     btree_destroy(ctx->service_name_idx);
 
     btree_destroy(ctx->service_reg_idx);
 
-    /* */
     /* Free all credentials and other entities set when parsing config */
-    /* */
     int i = 0;
     while ( ctx->cred[i] != NULL ) {
         free ( ctx->cred[i] );
@@ -817,9 +822,7 @@ int rvi_cleanup(rvi_handle handle)
     free ( ctx->cadir );
     free ( ctx->creddir );
 
-    /*  */
     /* Free the memory allocated to the rvi_context_t struct */
-    /* */
     free(ctx);
 
     return RVI_OK;
@@ -851,9 +854,7 @@ int rvi_cleanup(rvi_handle handle)
  */
 int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 {
-    /* */
     /* Ensure that we have received valid arguments */
-    /* */
     if( !handle || !addr || !port ) {
         return -EINVAL;
     }
@@ -863,63 +864,55 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     rvi_remote_t*   remote;
     rvi_context_t*  rvi;
     int             len;
-    char            tmpbuf[2048];
+    char            tmpbuf[BUFLEN] = {0};
+    json_t          *json;
+    json_error_t    jsonerr;
+    int ret;
 
     rvi = (rvi_context_t *)handle;
 
-    /* */
-    /* Spawn new SSL session from handle->ctx. BIO_new_ssl_connect spawns a new */
-    /* chain including a BIO and an SSL object */
-    /* */
+    /* 
+     * Spawn new SSL session from handle->ctx. BIO_new_ssl_connect spawns a new 
+     * chain including a BIO and an SSL object 
+     */
     sbio = BIO_new_ssl_connect(rvi->ssl_ctx);
     if(!sbio) {
-        fprintf(stderr, "Can't locate BIO chain\n");
-        ERR_print_errors_fp(stderr);
-        return -RVI_ERROR_OPENSSL;
+        ret = -RVI_ERROR_OPENSSL;
+        goto err;
     }
     BIO_get_ssl(sbio, &ssl);
     if(!ssl) {
-        fprintf(stderr, "Can't locate SSL pointer\n");
-        ERR_print_errors_fp(stderr);
-        BIO_free_all(sbio);
-        return -RVI_ERROR_OPENSSL;
+        ret = -RVI_ERROR_OPENSSL;
+        goto err;
     }
 
-    /* */
-    /* When performing I/O, automatically retry all reads and complete */
-    /* negotiations before returning. Note that all BIOs have their I/O flag */
-    /* set to blocking by default. */
-    /* */
+    /* 
+     * When performing I/O, automatically retry all reads and complete 
+     * negotiations before returning. Note that all BIOs have their I/O flag 
+     * set to blocking by default. 
+     */
     SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
 
-    /* */
-    /* Set the addr and port */
-    /* */
+    /* 
+     * Set the addr and port 
+     */
     BIO_set_conn_hostname(sbio, addr);
     BIO_set_conn_port(sbio, port);
 
     if(BIO_do_connect(sbio) <= 0) {
-        fprintf(stderr, "Error connecting to server\n");
-        ERR_print_errors_fp(stderr);
-        BIO_free_all(sbio);
-        return -1;
+        ret = -RVI_ERROR_OPENSSL;
+        goto err;
     }
 
     if(BIO_do_handshake(sbio) <= 0) {
-        fprintf(stderr, "Error establishing SSL connection\n");
-        ERR_print_errors_fp(stderr);
-        BIO_free_all(sbio);
-        return -1;
+        ret = -RVI_ERROR_OPENSSL;
+        goto err;
     }
 
     remote = rvi_remote_create ( sbio, SSL_get_fd ( ssl ) );
 
-    /* */
     /* Add this data structure to our lookup tree */
-    /* */
     btree_insert(rvi->remote_idx, remote);
-    
-    /* set remote->rvi_log_id */
     
     /* prepare "au" message */
     /*      populate cmd */
@@ -927,7 +920,7 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     /*      fill with handle->credentials */
     /*      fill with remote->rvi_log_id */
     
-    char au[500] = {0};
+    char au[4096] = {0};
     sprintf(au, "{\"cmd\":\"au\",\"ver\":\"1.1\",\"creds\":  [\"%s\"]"
             "}", rvi->cred[0]);
 
@@ -937,19 +930,48 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     BIO*            out; 
 
     /* parse incoming "au" message */
-    len = BIO_read(sbio, tmpbuf, 2048);
-    if( len <= 0 ) {
-        printf("Error receiving server reply\n");
+    if( ( len = BIO_read(sbio, tmpbuf, BUFLEN) ) <= 0 ) {
+        ret = -RVI_ERROR_OPENSSL;
+        goto err;
     } else {
-        /* We received a reply from the server, we expect it to be an "au" msg */
-        /* For debug purposes, echo all messages we get from the server to stdout */
+        /*
+         * We received a reply from the server, we expect it to be an "au" msg
+         */ 
+        json = json_loads( tmpbuf, 0, &jsonerr);
+        if( !json ) {
+            ret = -RVI_ERROR_JSON;
+            goto err;
+        }
+
+        if ( strcmp(json_string_value( 
+                        json_object_get ( json, "cmd" ) ), "au" ) != 0 ) {
+            ret = -RVI_ERROR_JSON;
+            goto err;
+        }
+
+        size_t index;
+        json_t *value;
+
+        /* For debug purposes, echo all messages we get from the server to
+         * stdout */
         out = BIO_new_fp(stdout, BIO_NOCLOSE);
-        BIO_write(out, tmpbuf, len);
+
+        json_t *tmp = json_object_get(json, "creds");
+        json_array_foreach(tmp, index, value) {
+            char *val = json_string_value ( value );
+            ret = get_credential_rights( 
+                    handle, val, 
+                    &remote->right_to_receive, &remote->right_to_invoke 
+                  );
+        }
         BIO_free(out);
-        /*      parse right_to_register to json_t */
-        /*      set remote->right_to_register to returned value */
+
+
+        /*      parse right_to_receive to json_t */
+        /*      set remote->right_to_receive to returned value */
         /*      parse right_to_invoke to json_t */
         /*      set remote->right_to_invoke to returned value */
+        json_decref(json);
     }
 
     /* prepare "sa" reply */
@@ -960,13 +982,21 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     /*      for each service in services array, create new rvi_service_t */
     /*      set new_service->name to service string */
     /*      set new_service->registrant to remote->fd */
-    /*      search connections_by_right_to_register to match name */
+    /*      search connections_by_right_to_receive to match name */
     /*          for each match, add to new_service->may_register */
     /*      search connections_by_right_to_invoke to match name */
     
-/*          for each match, add to new_service->may_invoke */
+    /*      for each match, add to new_service->may_invoke */
     /* return remote->fd */
+
     return remote->fd;
+
+err:
+    ERR_print_errors_fp(stderr);
+    BIO_free_all(sbio);
+    SSL_free(ssl);
+
+    return ret;
 }
 
 /** @brief Disconnect from a remote node with a specified file descriptor. 
@@ -1015,7 +1045,7 @@ int rvi_disconnect(rvi_handle handle, int fd)
             }
         }
 
-       /* free ( rtmp->right_to_register ); */
+       /* free ( rtmp->right_to_receive ); */
        /* free ( rtmp->right_to_invoke ); */
         free ( rtmp );
     }
@@ -1063,7 +1093,7 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
 int rvi_register_service(rvi_handle handle, const char *service_name, 
                          rvi_callback_t callback, void *service_data)
 {
-    /* Compare service name to handle->right_to_register */
+    /* Compare service name to handle->right_to_receive */
     /* If no match, return error */
     /* Create a new rvi_service_t structure */
     /* Set service->name to service_name */
@@ -1071,7 +1101,7 @@ int rvi_register_service(rvi_handle handle, const char *service_name,
     /* Set service->registrant to stdin */
     /* Add stdin to service->may_register */
     /* Search remotes by right_to_invoke; add to service->may_invoke */
-    /* Search remotes by right_to_register; add to service->may_register */
+    /* Search remotes by right_to_receive; add to service->may_register */
     /* If service->may_invoke is non-empty, prepare sa message */
     /*      For each fd in service->may_invoke, */
     /*      send sa message making service stat av */
@@ -1165,7 +1195,7 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
     /*          if au: */
     /*              perform all au work */
     /*          if sa: */
-    /*              validate service name(s) against remote's right_to_register */
+    /*              validate service name(s) against remote's right_to_receive */
     /*              update service list */
     /*          if rcv: */
     /*              validate service name(s) against remote's right_to_invoke */
