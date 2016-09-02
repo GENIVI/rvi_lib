@@ -284,8 +284,8 @@ void rvi_remote_destroy ( rvi_remote_t *remote)
     }
 
     BIO_free_all ( remote->sbio );
-    free ( remote->right_to_receive );
-    free ( remote->right_to_invoke );
+    json_decref ( remote->right_to_receive );
+    json_decref ( remote->right_to_invoke );
     free ( remote->buf );
     free ( remote );
 }
@@ -822,6 +822,9 @@ int rvi_cleanup(rvi_handle handle)
     free ( ctx->cadir );
     free ( ctx->creddir );
 
+    json_decref ( ctx->right_to_receive );
+    json_decref ( ctx->right_to_invoke );
+
     /* Free the memory allocated to the rvi_context_t struct */
     free(ctx);
 
@@ -1045,8 +1048,8 @@ int rvi_disconnect(rvi_handle handle, int fd)
             }
         }
 
-       /* free ( rtmp->right_to_receive ); */
-       /* free ( rtmp->right_to_invoke ); */
+        json_decref ( rtmp->right_to_receive ); 
+        json_decref ( rtmp->right_to_invoke ); 
         free ( rtmp );
     }
 
