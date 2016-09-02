@@ -235,8 +235,10 @@ void rvi_service_destroy ( rvi_service_t *service )
      }
 
      free ( service->name );
-     free ( service->may_register );
-     free ( service->may_invoke );
+     if( service->may_register )
+         free ( service->may_register );
+     if( service->may_invoke )
+         free ( service->may_invoke );
      free ( service );
 }
 
@@ -492,13 +494,13 @@ int get_credential_rights( rvi_handle handle, char *cred,
 
     ret = jwt_decode(&jwt, cred, (unsigned char *)key, strlen(key));
 
-    char *rcv = jwt_get_grant( jwt, "right_to_receive" );
+    char *rcv = (char *)jwt_get_grant( jwt, "right_to_receive" );
 
     *rec_arr = json_loads( rcv, 0, &jsonerr );
-
+ 
     free( rcv );
 
-    char *inv = jwt_get_grant( jwt, "right_to_invoke" );
+    char *inv = (char *)jwt_get_grant( jwt, "right_to_invoke" );
 
     *inv_arr = json_loads( inv, 0, &jsonerr );
 
@@ -762,19 +764,16 @@ int rvi_cleanup(rvi_handle handle)
      * The disconnect function removes the entry from the tree and frees the 
      * underlying memory. 
      */
+
     while(ctx->remote_idx->count != 0) {
-        rkey.fd = 0;
-        if((iter = btree_find(ctx->remote_idx, &rkey))) {
-            rtmp = btree_iter_data ( iter );
-            if(!rtmp) {
-                perror("Getting remote data in cleanup"); 
-                break;
-            }
-            /* Disconnect the remote SSL connection, delete the entry from the 
-             * tree & free the remote struct */
-            rvi_disconnect(handle, rtmp->fd);
+        rtmp = (rvi_remote_t *)ctx->remote_idx->root->dataRecords[0];
+        if(!rtmp) {
+            perror("Getting remote data in cleanup"); 
+            break;
         }
-        free(iter);
+        /* Disconnect the remote SSL connection, delete the entry from the 
+        * tree & free the remote struct */
+        rvi_disconnect(handle, rtmp->fd);
     }
     btree_destroy(ctx->remote_idx);
 
@@ -784,26 +783,23 @@ int rvi_cleanup(rvi_handle handle)
      * the underlying memory. 
      */
     while(ctx->service_name_idx->count != 0) {
-        skey.name = "";
-        if (( iter = btree_find ( ctx->service_name_idx, &skey ))) {
-            /* We found a service at the beginning of the tree */
-            stmp = btree_iter_data ( iter );
-            if ( !stmp ) {
-                perror("Getting service data in cleanup"); 
-                break;
-            }
-            /* Delete the entry from the service name index */
-            btree_delete ( ctx->service_name_idx, 
-                           ctx->service_name_idx->root, stmp);
-            /* Delete the entry from the service registrant index */
-            btree_delete ( ctx->service_reg_idx, 
-                           ctx->service_reg_idx->root, stmp);
-            /* Free the service memory */
-            rvi_service_destroy ( stmp );
+        /* Delete the first data record in the root node */
+        stmp = (rvi_service_t *)ctx->service_name_idx->root->dataRecords[0];
+        if ( !stmp ) {
+            perror("Getting service data in cleanup"); 
+            break;
         }
+        /* Delete the entry from the service name index */
+        btree_delete ( ctx->service_name_idx, 
+                       ctx->service_name_idx->root, stmp);
+        /* Delete the entry from the service registrant index */
+        btree_delete ( ctx->service_reg_idx, 
+                       ctx->service_reg_idx->root, stmp);
+        /* Free the service memory */
+        rvi_service_destroy ( stmp );
     }
 
-    /* Both trees should now be empty, so destroy the trees */
+    /* Destroy both service trees */
     btree_destroy(ctx->service_name_idx);
 
     btree_destroy(ctx->service_reg_idx);
@@ -918,70 +914,120 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     btree_insert(rvi->remote_idx, remote);
     
     /* prepare "au" message */
-    /*      populate cmd */
-    /*      populate version */
-    /*      fill with handle->credentials */
-    /*      fill with remote->rvi_log_id */
-    
-    char au[4096] = {0};
-    sprintf(au, "{\"cmd\":\"au\",\"ver\":\"1.1\",\"creds\":  [\"%s\"]"
-            "}", rvi->cred[0]);
+    json_t *au = json_pack( "{s:s, s:s, s:[s]}", 
+            "cmd", "au",            /* populate cmd */
+            "ver", "1.1",           /* populate version */
+            "creds", rvi->cred[0]   /* fill with handle->credentials */
+            ); /* TODO: Fill with full array of credentials, not just first */
+    if( !au ) {
+        ret = RVI_ERROR_JSON;
+        goto err;
+    }
+
+    char *auString = json_dumps(au, JSON_COMPACT);
 
     /* send "au" message */
-    BIO_puts(sbio, au);
+    BIO_puts(sbio, auString);
 
-    BIO*            out; 
+    free(auString);
+    json_decref(au);
 
     /* parse incoming "au" message */
     if( ( len = BIO_read(sbio, tmpbuf, BUFLEN) ) <= 0 ) {
         ret = -RVI_ERROR_OPENSSL;
         goto err;
-    } else {
-        /*
-         * We received a reply from the server, we expect it to be an "au" msg
-         */ 
-        json = json_loads( tmpbuf, 0, &jsonerr);
-        if( !json ) {
+    }
+    /*
+    * We received a reply from the server, we expect it to be an "au" msg
+    */ 
+    json = json_loads( tmpbuf, 0, &jsonerr );
+    if( !json ) {
             ret = -RVI_ERROR_JSON;
             goto err;
-        }
+    }
 
-        if ( strcmp(json_string_value( 
-                        json_object_get ( json, "cmd" ) ), "au" ) != 0 ) {
-            ret = -RVI_ERROR_JSON;
-            goto err;
-        }
+    memset( tmpbuf, 0, BUFLEN );
 
-        size_t index;
-        json_t *value;
+    if( strcmp(
+                json_string_value( json_object_get( json, "cmd" ) ),
+                "au" 
+              ) != 0) {
+        ret = -RVI_ERROR_JSON;
+        goto err;
+    }
 
-        /* For debug purposes, echo all messages we get from the server to
-         * stdout */
-        out = BIO_new_fp(stdout, BIO_NOCLOSE);
+    size_t index;
+    json_t *value;
 
-        json_t *tmp = json_object_get(json, "creds");
-        json_array_foreach(tmp, index, value) {
-            char *val = json_string_value ( value );
-            ret = get_credential_rights( 
+    json_t *tmp = json_object_get(json, "creds");
+    json_array_foreach(tmp, index, value) {
+        const char *val = json_string_value ( value );
+        ret = get_credential_rights( 
                     handle, val, 
                     &remote->right_to_receive, &remote->right_to_invoke 
                   );
-        }
-        BIO_free(out);
-
-
-        /*      parse right_to_receive to json_t */
-        /*      set remote->right_to_receive to returned value */
-        /*      parse right_to_invoke to json_t */
-        /*      set remote->right_to_invoke to returned value */
-        json_decref(json);
     }
+
+    json_decref(json);
+    
 
     /* prepare "sa" reply */
     /*      search services_by_may_register to match remote->right_to_invoke */
     /*      if the registrant is local, add service name to "sa" reply */
+    json_t *sa = json_pack( "{s:s, s:s, s:[s]}", 
+            "cmd", "sa",            /* populate cmd */
+            "stat", "av",           /* populate status */
+            "svcs", ""              /* fill with array of services */
+            ); /* TODO: Fill with full array of services */
+    if( !sa ) {
+        ret = RVI_ERROR_JSON;
+        goto err;
+    }
+
     /* send "sa" reply */
+    char *saString = json_dumps(sa, JSON_COMPACT);
+
+    BIO_puts(sbio, saString);
+
+    free(saString);
+    json_decref(sa);
+
     /* parse incoming "sa" message */
+    if( ( len = BIO_read( sbio, tmpbuf, BUFLEN ) ) <= 0 ) {
+        ret = -RVI_ERROR_OPENSSL;
+        goto err;
+    }
+    json = json_loads( tmpbuf, 0, &jsonerr );
+    if( !json ) {
+        ret = -RVI_ERROR_JSON;
+        goto err;
+    }
+
+    memset( tmpbuf, 0, BUFLEN );
+
+    if( strcmp(
+                json_string_value( json_object_get( json, "cmd" ) ),
+                "sa" 
+              ) != 0) {
+        ret = -RVI_ERROR_JSON;
+        goto err;
+    }
+
+    tmp = json_object_get(json, "svcs");
+    json_array_foreach(tmp, index, value) {
+        const char *val = json_string_value( value );
+        rvi_service_t *service = rvi_service_create( val, remote->fd, NULL );
+        
+        btree_insert( rvi->service_name_idx, service );
+        btree_insert( rvi->service_reg_idx, service );
+
+        BIO *out = BIO_new_fp(stdout, BIO_NOCLOSE);
+        BIO_printf(out, "\t%s\n", val);
+        BIO_free_all(out); 
+    }
+
+    json_decref(json);
+
     /*      for each service in services array, create new rvi_service_t */
     /*      set new_service->name to service string */
     /*      set new_service->registrant to remote->fd */
@@ -1043,6 +1089,8 @@ int rvi_disconnect(rvi_handle handle, int fd)
                                    ctx->service_reg_idx->root, stmp)) < 0) {
                 printf("Error deleting service key from tree\n");
             } else {
+                btree_delete(ctx->service_name_idx, 
+                             ctx->service_name_idx->root, stmp);
                 /* Also free all memory for the service structure */
                 rvi_service_destroy(stmp);
             }
@@ -1074,6 +1122,9 @@ int rvi_disconnect(rvi_handle handle, int fd)
  */
 int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
 {
+    if( !handle || !conn || !conn_size )
+        return EINVAL;
+
     printf("write the get connections function...\n");
     return RVI_OK;
 }
@@ -1082,6 +1133,10 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
 /* ********************** */
 /* RVI SERVICE MANAGEMENT */
 /* ********************** */
+
+/** Internal utility functions for services not exposed in public API */
+
+int remove_service(rvi_handle handle, const char *service_name);
 
 /** @brief Register a service with a callback function
  *
@@ -1124,19 +1179,27 @@ int rvi_register_service(rvi_handle handle, const char *service_name,
  */
 int rvi_unregister_service(rvi_handle handle, const char *service_name)
 {
+    if( !handle || !service_name )
+        return EINVAL;
     /* if service_name is not in services_by_name, return error */
     /* if service->registrant is not stdin, return error */
+    return remove_service(handle, service_name);
+}
+
+int remove_service(rvi_handle handle, const char *service_name)
+{
+    if( !handle || !service_name )
+        return EINVAL;
     /* if service->may_invoke is not empty, prepare sa message */
     /*      for each fd in service->may_invoke */
     /*      send sa message making service_name stat un */
     /* Remove service from services_by_name */
     /* Remove service from services_by_fd */
     /* Free service */
-    printf("Write the unregister service function.\n");
-    return 0;
+
+   printf("Write the unregister service function.\n");
+   return 0;
 }
-
-
 
 /** @brief Get list of services available
  *
@@ -1154,12 +1217,26 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name)
  */
 int rvi_get_services(rvi_handle handle, char **result, int *len)
 {
-    /* for (i = 0; i < len; i++) */
-    /*      get next service name from service name index */
-    /*      *result++ = strdup(service_name) */
-    /* *len = i; */
-    /* return RVI_OK; */
-    printf("Write the get services function.\n");
+    if( !handle || !result || !len )
+        return EINVAL;
+    
+    rvi_context_t *ctx = (rvi_context_t *)handle;
+
+    btree_iter iter = btree_iter_begin( ctx->service_name_idx );
+    int i = 0;
+    while( ! btree_iter_at_end( iter ) ) {
+        if( i == *len )
+            break;
+        rvi_service_t *service = btree_iter_data( iter );
+        if( ! service )
+            break;
+        *result++ = strdup( service->name );
+        i++;
+        btree_iter_next( iter );
+    }
+    *len = i;
+    btree_iter_cleanup( iter );
+
     return RVI_OK;
 }
 

@@ -22,10 +22,14 @@ int main(int argc, char *argv[])
     int stat = 0;
     int *connections = {0};
     rvi_handle myHandle;
-    char **services = {0};
-    int len = 0;
+    char **services = malloc( 20 * sizeof( char * ) );
+    int len = 20;
     json_t *parameters = {0};
     int fd = 0;
+
+    for(int i = 0; i < len; i++) {
+        services[i] = NULL;
+    }
 
     myHandle = rvi_init(argv[1]);
 
@@ -49,6 +53,16 @@ int main(int argc, char *argv[])
 
     stat = rvi_get_services(myHandle, services, &len);
     printf("stat after get services is %d\n", stat);
+    printf("services:\n");
+    for(int i = 0; i < len; i++) {
+        printf("\t\%s\n", services[i]);
+    }
+    
+    char **svcs = services;
+    while(*services != NULL) {
+        free(*services++);
+    }
+    free(svcs);
 
     stat = rvi_invoke_remote_service(myHandle, "genivi.org/test", parameters);
     printf("stat after invoke remote is %d\n", stat);
