@@ -1125,7 +1125,24 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
     if( !handle || !conn || !conn_size )
         return EINVAL;
 
-    printf("write the get connections function...\n");
+    rvi_context_t *ctx = (rvi_context_t *)handle;
+
+    btree_iter iter = btree_iter_begin( ctx->remote_idx );
+    int i = 0;
+    while( ! btree_iter_at_end( iter ) ) {
+        if( i == *conn_size )
+            break;
+        rvi_remote_t *remote = btree_iter_data( iter );
+        if( ! remote )
+            break;
+        *conn++ = remote->fd ;
+        i++;
+        btree_iter_next( iter );
+    }
+    *conn_size = i;
+    btree_iter_cleanup( iter );
+
+    printf("finished the get connections function...\n");
     return RVI_OK;
 }
 

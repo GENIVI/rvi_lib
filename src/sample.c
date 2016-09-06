@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     }
 
     int stat = 0;
-    int *connections = {0};
+    int *connections = malloc( 20 * sizeof(int) );
     rvi_handle myHandle;
     char **services = malloc( 20 * sizeof( char * ) );
     int len = 20;
@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
 
     for(int i = 0; i < len; i++) {
         services[i] = NULL;
+        connections[i] = 0;
     }
 
     myHandle = rvi_init(argv[1]);
@@ -43,6 +44,11 @@ int main(int argc, char *argv[])
 
     stat = rvi_get_connections(myHandle, connections, &len);
     printf("stat after get connections is %d\n", stat);
+    int *conn = connections;
+    while(*connections != 0) {
+        printf("connection on fd %d\n", *connections++);
+    }
+    free(conn);
 
     stat = rvi_register_service(myHandle, "genivi.org/test", 
                                 callbackFunc, NULL);
