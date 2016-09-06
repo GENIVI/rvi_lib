@@ -340,21 +340,28 @@ SSL_CTX *setup_client_ctx ( rvi_handle handle )
 
     /* Specify winnowed cipher list here */
     const char *cipher_list = "HIGH";
-    if(SSL_CTX_set_cipher_list(ssl_ctx, cipher_list) != 1) { return NULL; } 
+    if(SSL_CTX_set_cipher_list(ssl_ctx, cipher_list) != 1) { 
+        SSL_CTX_free( ssl_ctx );
+        return NULL; 
+    } 
 
     if( SSL_CTX_load_verify_locations(ssl_ctx, rvi_ctx->cafile, 
                                       rvi_ctx->cadir) != 1 ) {
+        SSL_CTX_free( ssl_ctx );
         return NULL;
     }
     if( SSL_CTX_set_default_verify_paths(ssl_ctx) != 1 ) {
+        SSL_CTX_free( ssl_ctx );
         return NULL;
     }
     if( SSL_CTX_use_certificate_chain_file(ssl_ctx, 
                                            rvi_ctx->certfile) != 1 ) {
+        SSL_CTX_free( ssl_ctx );
         return NULL;
     }
     if( SSL_CTX_use_PrivateKey_file(ssl_ctx, rvi_ctx->keyfile, 
                                     SSL_FILETYPE_PEM) != 1 ) {
+        SSL_CTX_free( ssl_ctx );
         return NULL;
     }
 
@@ -726,8 +733,7 @@ rvi_handle rvi_init ( char *config_filename )
     return (rvi_handle)ctx;
 
 err:
-    free(ctx->cred);
-    free(ctx);
+    rvi_cleanup(ctx);
 
     return NULL;
 }
@@ -765,61 +771,74 @@ int rvi_cleanup(rvi_handle handle)
      * underlying memory. 
      */
 
-    while(ctx->remote_idx->count != 0) {
-        rtmp = (rvi_remote_t *)ctx->remote_idx->root->dataRecords[0];
-        if(!rtmp) {
-            perror("Getting remote data in cleanup"); 
-            break;
+    if(ctx->remote_idx) {
+        while(ctx->remote_idx->count != 0) {
+            rtmp = (rvi_remote_t *)ctx->remote_idx->root->dataRecords[0];
+            if(!rtmp) {
+                perror("Getting remote data in cleanup"); 
+                break;
+            }
+            /* Disconnect the remote SSL connection, delete the entry from the 
+            * tree & free the remote struct */
+            rvi_disconnect(handle, rtmp->fd);
         }
-        /* Disconnect the remote SSL connection, delete the entry from the 
-        * tree & free the remote struct */
-        rvi_disconnect(handle, rtmp->fd);
+        btree_destroy(ctx->remote_idx);
     }
-    btree_destroy(ctx->remote_idx);
 
     /* 
      * As long as the context contains services, find the first struct from 
      * either service tree. Delete the entry from each service tree, then free 
      * the underlying memory. 
      */
-    while(ctx->service_name_idx->count != 0) {
-        /* Delete the first data record in the root node */
-        stmp = (rvi_service_t *)ctx->service_name_idx->root->dataRecords[0];
-        if ( !stmp ) {
-            perror("Getting service data in cleanup"); 
-            break;
+    if(ctx->service_name_idx) {
+        while(ctx->service_name_idx->count != 0) {
+            /* Delete the first data record in the root node */
+            stmp = (rvi_service_t *)ctx->service_name_idx->root->dataRecords[0];
+            if ( !stmp ) {
+                perror("Getting service data in cleanup"); 
+                break;
+            }
+            /* Delete the entry from the service name index */
+            btree_delete ( ctx->service_name_idx, 
+                           ctx->service_name_idx->root, stmp);
+            /* Delete the entry from the service registrant index */
+            btree_delete ( ctx->service_reg_idx, 
+                           ctx->service_reg_idx->root, stmp);
+            /* Free the service memory */
+            rvi_service_destroy ( stmp );
         }
-        /* Delete the entry from the service name index */
-        btree_delete ( ctx->service_name_idx, 
-                       ctx->service_name_idx->root, stmp);
-        /* Delete the entry from the service registrant index */
-        btree_delete ( ctx->service_reg_idx, 
-                       ctx->service_reg_idx->root, stmp);
-        /* Free the service memory */
-        rvi_service_destroy ( stmp );
+
+        /* Destroy both service trees */
+        btree_destroy(ctx->service_name_idx);
+
+        btree_destroy(ctx->service_reg_idx);
     }
-
-    /* Destroy both service trees */
-    btree_destroy(ctx->service_name_idx);
-
-    btree_destroy(ctx->service_reg_idx);
 
     /* Free all credentials and other entities set when parsing config */
-    int i = 0;
-    while ( ctx->cred[i] != NULL ) {
-        free ( ctx->cred[i] );
-        i++;
+    if(ctx->cred) {
+        int i = 0;
+        while ( ctx->cred[i] != NULL ) {
+            free ( ctx->cred[i] );
+            i++;
+        }
+        free ( ctx->cred );
     }
-    free ( ctx->cred );
 
-    free ( ctx->certfile );
-    free ( ctx->keyfile );
-    free ( ctx->cafile );
-    free ( ctx->cadir );
-    free ( ctx->creddir );
+    if( ctx->certfile )
+        free ( ctx->certfile );
+    if( ctx->keyfile )
+        free ( ctx->keyfile );
+    if( ctx->cafile )
+        free ( ctx->cafile );
+    if( ctx->cadir )
+        free ( ctx->cadir );
+    if( ctx->creddir )
+        free ( ctx->creddir );
 
-    json_decref ( ctx->right_to_receive );
-    json_decref ( ctx->right_to_invoke );
+    if( ctx->right_to_receive )
+        json_decref ( ctx->right_to_receive );
+    if( ctx->right_to_invoke )
+        json_decref ( ctx->right_to_invoke );
 
     /* Free the memory allocated to the rvi_context_t struct */
     free(ctx);
@@ -1014,8 +1033,11 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     }
 
     tmp = json_object_get(json, "svcs");
+    /* for each service in services array, create new rvi_service_t */
     json_array_foreach(tmp, index, value) {
+        /* set new_service->name to service string */
         const char *val = json_string_value( value );
+        /* set new_service->registrant to remote->fd */
         rvi_service_t *service = rvi_service_create( val, remote->fd, NULL );
         
         btree_insert( rvi->service_name_idx, service );
@@ -1024,9 +1046,6 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 
     json_decref(json);
 
-    /*      for each service in services array, create new rvi_service_t */
-    /*      set new_service->name to service string */
-    /*      set new_service->registrant to remote->fd */
     /*      search connections_by_right_to_receive to match name */
     /*          for each match, add to new_service->may_register */
     /*      search connections_by_right_to_invoke to match name */
