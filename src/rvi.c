@@ -137,7 +137,7 @@ char *get_pubkey_file( char *filename );
 
 int validate_credential( rvi_handle handle, char *cred );
 
-int get_credential_rights( rvi_handle handle, char *cred, 
+int get_credential_rights( rvi_handle handle, const char *cred, 
                            json_t **rec_arr, json_t **inv_arr );
 
 /****************************************************************************/
@@ -475,7 +475,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
 }
 
 /** Get arrays of right_to_receive and right_to_invoke */
-int get_credential_rights( rvi_handle handle, char *cred, 
+int get_credential_rights( rvi_handle handle, const char *cred, 
                            json_t **rec_arr, json_t **inv_arr )
 {
     if( !handle || !cred || !rec_arr || !inv_arr )
@@ -744,12 +744,12 @@ err:
 
 int rvi_cleanup(rvi_handle handle)
 {
+    if( !handle )
+        return EINVAL;
+
     rvi_context_t * ctx = (rvi_context_p)handle;
-    rvi_remote_t    rkey = {0};
     rvi_remote_t *  rtmp;
-    rvi_service_t   skey = {0};
     rvi_service_t * stmp;
-    btree_iter      iter;
 
     /* free all SSL structs */
     SSL_CTX_free(ctx->ssl_ctx);
@@ -1020,10 +1020,6 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
         
         btree_insert( rvi->service_name_idx, service );
         btree_insert( rvi->service_reg_idx, service );
-
-        BIO *out = BIO_new_fp(stdout, BIO_NOCLOSE);
-        BIO_printf(out, "\t%s\n", val);
-        BIO_free_all(out); 
     }
 
     json_decref(json);
@@ -1268,6 +1264,8 @@ int rvi_get_services(rvi_handle handle, char **result, int *len)
 int rvi_invoke_remote_service(rvi_handle handle, const char *service_name, 
                               const json_t *parameters)
 {
+    if( !handle || !service_name )
+        return EINVAL;
     /* get service from service name index */
     /*  if not found, return error */
     /* identify registrant, get SSL session from remote index */
