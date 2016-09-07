@@ -74,6 +74,9 @@ typedef struct rvi_context_t {
     json_t *right_to_receive;
     /* own right_to_invoke */
     json_t *right_to_invoke;
+
+    /*DEBUG */
+    int count;
 } rvi_context_t, *rvi_context_p;
 
 /** @brief Data for connection to remote node */
@@ -285,7 +288,8 @@ void rvi_remote_destroy ( rvi_remote_t *remote)
         return;
     }
 
-    BIO_free_all ( remote->sbio );
+    if( remote->sbio )
+        BIO_free_all ( remote->sbio );
     json_decref ( remote->right_to_receive );
     json_decref ( remote->right_to_invoke );
     free ( remote->buf );
@@ -670,6 +674,9 @@ rvi_handle rvi_init ( char *config_filename )
     }
     ctx = memset ( ctx, 0, sizeof ( rvi_context_t ) );
 
+    /* DEBUG */
+    ctx->count = 0;
+
     /* Allocate a block of memory for storing credentials, then initialize each 
      * pointer to null */
     ctx->cred = malloc ( 20 * sizeof ( char * ));
@@ -889,6 +896,9 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 
     rvi = (rvi_context_t *)handle;
 
+    /* DEBUG */
+    printf("connection count is %d\n", rvi->count++);
+
     /* 
      * Spawn new SSL session from handle->ctx. BIO_new_ssl_connect spawns a new 
      * chain including a BIO and an SSL object 
@@ -1058,7 +1068,6 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 err:
     ERR_print_errors_fp(stderr);
     BIO_free_all(sbio);
-    SSL_free(ssl);
 
     return ret;
 }
@@ -1093,27 +1102,23 @@ int rvi_disconnect(rvi_handle handle, int fd)
         printf("Error deleting remote key from tree\n");
         return -1;
     } else {
-        /* Close the connection and free the OpenSSL BIO chain */
-        BIO_free_all(rtmp->sbio);
-
         /* Search the service tree for any services registered by the remote */
         skey.registrant = fd;
         while((stmp = btree_search(ctx->service_reg_idx, &skey))) {
-            /* We have a match, so delete the service and free the node from the tree */
+            /* We have a match, so delete the service and free the node from
+             * the tree */
             if((res = btree_delete(ctx->service_reg_idx, 
                                    ctx->service_reg_idx->root, stmp)) < 0) {
                 printf("Error deleting service key from tree\n");
             } else {
                 btree_delete(ctx->service_name_idx, 
                              ctx->service_name_idx->root, stmp);
-                /* Also free all memory for the service structure */
+                /* Close connection & free memory for the service structure */
                 rvi_service_destroy(stmp);
             }
         }
 
-        json_decref ( rtmp->right_to_receive ); 
-        json_decref ( rtmp->right_to_invoke ); 
-        free ( rtmp );
+        rvi_remote_destroy( rtmp );
     }
 
     return RVI_OK;
@@ -1142,6 +1147,10 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
 
     rvi_context_t *ctx = (rvi_context_t *)handle;
 
+    if( ctx->remote_idx->count == 0 ) {
+        *conn_size = 0;
+        return RVI_OK;
+    }
     btree_iter iter = btree_iter_begin( ctx->remote_idx );
     int i = 0;
     while( ! btree_iter_at_end( iter ) ) {
@@ -1157,7 +1166,6 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
     *conn_size = i;
     btree_iter_cleanup( iter );
 
-    printf("finished the get connections function...\n");
     return RVI_OK;
 }
 
@@ -1251,8 +1259,13 @@ int rvi_get_services(rvi_handle handle, char **result, int *len)
 {
     if( !handle || !result || !len )
         return EINVAL;
-    
+
     rvi_context_t *ctx = (rvi_context_t *)handle;
+
+    if( ctx->service_name_idx->count == 0 ) {
+        *len = 0;
+        return RVI_OK;
+    }
 
     btree_iter iter = btree_iter_begin( ctx->service_name_idx );
     int i = 0;
@@ -1286,12 +1299,95 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
     if( !handle || !service_name )
         return EINVAL;
     /* get service from service name index */
-    /*  if not found, return error */
+
+    rvi_context_t *ctx = (rvi_context_t *)handle;
+    rvi_service_t skey = {0};
+    rvi_service_t *stmp = NULL;
+    rvi_remote_t rkey = {0};
+    rvi_remote_t *rtmp = NULL;
+    time_t rawtime; /* the unix epoch time for the current time */
+    int wait = 1000; /* the timeout length in ms */
+    long long timeout;
+    char *params = NULL;
+    json_t *rcv;
+    int ret;
+    int flip = 0;
+
+    if( service_name[0] == '/' ) { /* ignore the prepended char */
+        service_name++;
+        flip = 1;
+    }
+    
+    skey.name = strdup(service_name);
+
+    stmp = btree_search(ctx->service_name_idx, &skey);
+    if( !stmp ) { /* if not found, return error */
+        printf("No such service\n");
+        ret = ENOENT;
+        goto exit;
+    }
+
     /* identify registrant, get SSL session from remote index */
+    rkey.fd = stmp->registrant;
+
+    rtmp = btree_search(ctx->remote_idx, &rkey);
+    if( !rtmp ) { /* if not found, return error */
+        printf("No such connection\n");
+        ret = ENXIO;
+        goto exit;
+    }
+
+    time(&rawtime);
+    timeout = rawtime + wait;
+    if( flip ) {
+        service_name--;
+    }
+
     /* prepare rcv message */
+    if(parameters) {
+        params = json_dumps(parameters, JSON_COMPACT);
+    } else {
+        params = strdup("");
+    }
+
+//    char *full_name = malloc( sizeof( char * ) * 
+//            ( strlen(service_name) + 2 ));
+//    full_name = strcpy(full_name, "/");
+//    full_name = strcat(full_name, service_name);
+
+    rcv = json_pack( 
+            "{s:s, s:i, s:s, s:{s:s, s:i, s:o}}",
+            "cmd", "rcv",
+            "tid", 1, /* TODO: talk to Ulf about tid */
+            "mod", "proto_json_rpc",
+            "data", "service", /*full_name,*/ service_name,
+                    "timeout", timeout,
+                    "parameters", parameters
+            );
+    if( ! rcv ) {
+        printf("JSON error");
+        ret = RVI_ERROR_JSON;
+        goto exit;
+    }
+
+    char *rcvString = json_dumps(rcv, JSON_COMPACT);
+
     /* send rcv message to registrant */
-    printf("Write the invoke service function.\n");
-    return 0;
+    printf("Send: %s\n", rcvString);
+    BIO_puts(rtmp->sbio, rcvString);
+
+//    free(full_name);
+    free(rcvString);
+    json_decref(rcv);
+
+    ret = 0;
+
+exit:
+    if( params )
+        free(params);
+    free(skey.name);
+
+    return ret;
 }
 
 /* ************** */
