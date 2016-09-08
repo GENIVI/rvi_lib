@@ -934,11 +934,22 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     btree_insert(rvi->remote_idx, remote);
     
     /* prepare "au" message */
-    json_t *au = json_pack( "{s:s, s:s, s:[s]}", 
+    json_t *creds = json_array();
+
+    /* create JSON array of all credentials */
+    if(rvi->cred) {
+        int i = 0;
+        while ( rvi->cred[i] != NULL ) {
+            json_array_append_new( creds, json_string(rvi->cred[i]) );
+            i++;
+        }
+    }
+
+    json_t *au = json_pack( "{s:s, s:s, s:o}", 
             "cmd", "au",            /* populate cmd */
             "ver", "1.1",           /* populate version */
-            "creds", rvi->cred[0]   /* fill with handle->credentials */
-            ); /* TODO: Fill with full array of credentials, not just first */
+            "creds", creds   /* fill with json array */
+            ); 
     if( !au ) {
         ret = RVI_ERROR_JSON;
         goto err;
@@ -991,13 +1002,25 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     json_decref(json);
     
 
+    /* create JSON array of all services */
+    json_t *svcs = json_array();
+    if( rvi->service_name_idx ) {
+        btree_iter iter = btree_iter_begin( rvi->service_name_idx );
+        while ( !btree_iter_at_end( iter ) ) {
+            rvi_service_t *stmp = btree_iter_data( iter );
+            json_array_append_new( creds, json_string( stmp->name ) );
+            btree_iter_next( iter );
+        }
+        btree_iter_cleanup( iter );
+    }
+
     /* prepare "sa" reply */
     /*      search services_by_may_register to match remote->right_to_invoke */
     /*      if the registrant is local, add service name to "sa" reply */
-    json_t *sa = json_pack( "{s:s, s:s, s:[s]}", 
+    json_t *sa = json_pack( "{s:s, s:s, s:o}", 
             "cmd", "sa",            /* populate cmd */
             "stat", "av",           /* populate status */
-            "svcs", ""              /* fill with array of services */
+            "svcs", svcs              /* fill with array of services */
             ); /* TODO: Fill with full array of services */
     if( !sa ) {
         ret = RVI_ERROR_JSON;
