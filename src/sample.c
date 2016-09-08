@@ -79,7 +79,7 @@ void processChoice( int choice )
             printf("You chose to connect to a remote node.\n");
             int stat = rvi_connect(myHandle, "192.168.18.76", "9007");
             printf("stat after connect is %d\n", stat);
-            //connect();
+            //connect_to_node();
             break;
         case 2:
             printf("Which RVI node would you like to disconnect from?\n");
@@ -147,7 +147,7 @@ void initialize(void)
     printf("RVI initialized!\n");
 }
 
-void connect(void)
+void connect_to_node(void)
 {
     int stat = rvi_connect(myHandle, "192.168.18.76", "9007");
     if( stat > 0 ) {
