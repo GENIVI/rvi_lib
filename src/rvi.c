@@ -74,9 +74,6 @@ typedef struct rvi_context_t {
     json_t *right_to_receive;
     /* own right_to_invoke */
     json_t *right_to_invoke;
-
-    /*DEBUG */
-    int count;
 } rvi_context_t, *rvi_context_p;
 
 /** @brief Data for connection to remote node */
@@ -674,9 +671,6 @@ rvi_handle rvi_init ( char *config_filename )
     }
     ctx = memset ( ctx, 0, sizeof ( rvi_context_t ) );
 
-    /* DEBUG */
-    ctx->count = 0;
-
     /* Allocate a block of memory for storing credentials, then initialize each 
      * pointer to null */
     ctx->cred = malloc ( 20 * sizeof ( char * ));
@@ -895,9 +889,6 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     int ret;
 
     rvi = (rvi_context_t *)handle;
-
-    /* DEBUG */
-    printf("connection count is %d\n", rvi->count++);
 
     /* 
      * Spawn new SSL session from handle->ctx. BIO_new_ssl_connect spawns a new 
@@ -1308,15 +1299,9 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
     time_t rawtime; /* the unix epoch time for the current time */
     int wait = 1000; /* the timeout length in ms */
     long long timeout;
-    char *params = NULL;
+    json_t *params = NULL;
     json_t *rcv;
     int ret;
-    int flip = 0;
-
-    if( service_name[0] == '/' ) { /* ignore the prepended char */
-        service_name++;
-        flip = 1;
-    }
     
     skey.name = strdup(service_name);
 
@@ -1339,30 +1324,18 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
 
     time(&rawtime);
     timeout = rawtime + wait;
-    if( flip ) {
-        service_name--;
-    }
 
     /* prepare rcv message */
-    if(parameters) {
-        params = json_dumps(parameters, JSON_COMPACT);
-    } else {
-        params = strdup("");
-    }
-
-//    char *full_name = malloc( sizeof( char * ) * 
-//            ( strlen(service_name) + 2 ));
-//    full_name = strcpy(full_name, "/");
-//    full_name = strcat(full_name, service_name);
 
     rcv = json_pack( 
             "{s:s, s:i, s:s, s:{s:s, s:i, s:o}}",
             "cmd", "rcv",
             "tid", 1, /* TODO: talk to Ulf about tid */
             "mod", "proto_json_rpc",
-            "data", "service", /*full_name,*/ service_name,
+            "data", "service", service_name,
                     "timeout", timeout,
-                    "parameters", parameters
+                    "parameters", 
+                    parameters ? parameters : (params = json_object())
             );
     if( ! rcv ) {
         printf("JSON error");
@@ -1376,15 +1349,12 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
     printf("Send: %s\n", rcvString);
     BIO_puts(rtmp->sbio, rcvString);
 
-//    free(full_name);
     free(rcvString);
     json_decref(rcv);
 
     ret = 0;
 
 exit:
-    if( params )
-        free(params);
     free(skey.name);
 
     return ret;

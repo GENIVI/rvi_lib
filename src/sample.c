@@ -5,6 +5,7 @@
  * file, you can obtain one at http://mozilla.org/MPL/2.0.
  */
 
+#include <string.h>
 #include <time.h>
 
 #include "rvi.h"
@@ -21,11 +22,11 @@ void processChoice( int choice );
  
 void listChoices(void); 
 
-void initialize(void);
+void smpl_initialize(void);
 
-void connect(void);
+void smpl_connect(void);
 
-void disconnect(void);
+void smpl_disconnect(void);
 
 void get_connections(void);
 
@@ -35,11 +36,11 @@ void unregister_service(void);
 
 void get_services(void);
 
-void invoke(void);
+void smpl_invoke(void);
 
-void process(void);
+void smpl_process(void);
 
-void shutdown(void);
+void smpl_shutdown(void);
 
 rvi_handle myHandle = {0};
 
@@ -73,17 +74,15 @@ void processChoice( int choice )
     switch( choice ) {
         case 0:
             printf("You chose to initialize RVI.\n");
-            initialize();
+            smpl_initialize();
             break;
         case 1:
             printf("You chose to connect to a remote node.\n");
-            int stat = rvi_connect(myHandle, "192.168.18.76", "9007");
-            printf("stat after connect is %d\n", stat);
-            //connect_to_node();
+            smpl_connect();
             break;
         case 2:
             printf("Which RVI node would you like to disconnect from?\n");
-            disconnect();
+            smpl_disconnect();
             break;
         case 3:
             printf("You chose to get a list of connections.\n");
@@ -103,15 +102,15 @@ void processChoice( int choice )
             break;
         case 7:
             printf("What service would you like to invoke?\n");
-            invoke();
+            smpl_invoke();
             break;
         case 8:
             printf("You chose to process input.\n");
-            process();
+            smpl_process();
             break;
         case 9:
             printf("You chose to shutdown RVI.\n");
-            shutdown();
+            smpl_shutdown();
             break;
         case 10:
             printf("Goodbye!\n");
@@ -137,7 +136,7 @@ void listChoices(void) {
             "\t[10]: Close program.\n");
 }
 
-void initialize(void)
+void smpl_initialize(void)
 {
     char input[BUFSIZE] = {0};
     printf("Config file: ");
@@ -147,8 +146,12 @@ void initialize(void)
     printf("RVI initialized!\n");
 }
 
-void connect_to_node(void)
+void smpl_connect(void)
 {
+    if(!myHandle) {
+        printf("Please initialize RVI first!\n");
+        return;
+    }
     int stat = rvi_connect(myHandle, "192.168.18.76", "9007");
     if( stat > 0 ) {
         printf("Connected to remote node on fd %d!\n", stat);
@@ -158,8 +161,12 @@ void connect_to_node(void)
     printf("stat after connect is %d\n", stat);
 }
 
-void disconnect(void)
+void smpl_disconnect(void)
 {
+    if(!myHandle) {
+        printf("Please initialize RVI first!\n");
+        return;
+    }
     int fd;
     scanf("%d", &fd);
     int stat = rvi_disconnect(myHandle, fd);
@@ -168,6 +175,10 @@ void disconnect(void)
 
 void get_connections(void)
 {
+    if(!myHandle) {
+        printf("Please initialize RVI first!\n");
+        return;
+    }
     int *connections = malloc( LEN * sizeof(int *) );
     int len = LEN;
     int *conn = connections;
@@ -187,6 +198,10 @@ void get_connections(void)
 
 void register_service(void)
 {
+    if(!myHandle) {
+        printf("Please initialize RVI first!\n");
+        return;
+    }
     int stat = rvi_register_service(myHandle, "genivi.org/test", 
                                         callbackFunc, NULL);
     printf("stat after register service is %d\n", stat);
@@ -194,12 +209,20 @@ void register_service(void)
 
 void unregister_service(void)
 {
+    if(!myHandle) {
+        printf("Please initialize RVI first!\n");
+        return;
+    }
     int stat = rvi_unregister_service(myHandle, "genivi.org/test");
     printf("stat after unregister service is %d\n", stat);
 }
 
 void get_services(void)
 {
+    if(!myHandle) {
+        printf("Please initialize RVI first!\n");
+        return;
+    }
     int len = LEN;
     char **services = malloc( LEN * sizeof( char * ) );
 
@@ -220,27 +243,35 @@ void get_services(void)
     free(svcs);
 }
 
-void invoke(void)
+void smpl_invoke(void)
 {
+    if(!myHandle) {
+        printf("Please initialize RVI first!\n");
+        return;
+    }
     char input[BUFSIZE] = {0};
     char params[BUFSIZE] = {0};
     json_t *parameters = {0};
 
     scanf("%s", input);
+    fflush(stdin);
     printf("Okay, you chose to invoke %s. Any parameters?\n"
                     "Please supply a JSON object: ", input);
     scanf("%s", params);
     parameters = json_loads(params, 0, NULL);
     int stat = rvi_invoke_remote_service(myHandle, input, parameters);
     printf("stat after invoking remote service %s is %d\n", input, stat);
-    json_decref(parameters);
 }
 
-void process(void)
+void smpl_process(void)
 {
+    if(!myHandle) {
+        printf("Please initialize RVI first!\n");
+        return;
+    }
     int len;
     printf("How many connections? ");
-    scanf("%d", &len);
+    scanf("%d*[^\n]", &len);
 
     int *connections = malloc( len * sizeof(int *) );
 
@@ -253,8 +284,15 @@ void process(void)
     printf("stat after process input is %d\n", stat);
 }
 
-void shutdown(void)
+void smpl_shutdown(void)
 {
+    if(!myHandle) {
+        printf("Please initialize RVI first!\n");
+        return;
+    }
     int stat = rvi_cleanup(myHandle);
+    if(stat == RVI_OK) {
+        myHandle = NULL; 
+    }
     printf("stat after cleanup is %d\n", stat);
 }
