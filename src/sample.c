@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 
     while ( scanf("%d", &choice) ) {
         processChoice( choice );
-        listChoices();
+        printf("Make a choice: ");
     }
 
     return 0;
@@ -81,7 +81,7 @@ void processChoice( int choice )
             smpl_connect();
             break;
         case 2:
-            printf("Which RVI node would you like to disconnect from?\n");
+            printf("Which RVI node would you like to disconnect from? ");
             smpl_disconnect();
             break;
         case 3:
@@ -122,18 +122,19 @@ void processChoice( int choice )
 }
 
 void listChoices(void) {
-    printf("Make a choice:\n"
-            "\t[0]: Initialize RVI\n"
-            "\t[1]: Connect to remote node\n"
-            "\t[2]: Disconnect from remote node\n"
-            "\t[3]: Get a list of connections\n"
-            "\t[4]: Register a service\n"
-            "\t[5]: Unregister a service\n"
-            "\t[6]: Get a list of services\n"
-            "\t[7]: Invoke remote service\n"
-            "\t[8]: Process input\n"
-            "\t[9]: Shutdown RVI\n"
-            "\t[10]: Close program.\n");
+    printf("\t[0]: Initialize RVI\n"
+           "\t[1]: Connect to remote node\n"
+           "\t[2]: Disconnect from remote node\n"
+           "\t[3]: Get a list of connections\n"
+           "\t[4]: Register a service\n"
+           "\t[5]: Unregister a service\n"
+           "\t[6]: Get a list of services\n"
+           "\t[7]: Invoke remote service\n"
+           "\t[8]: Process input\n"
+           "\t[9]: Shutdown RVI\n"
+           "\t[10]: Close program.\n"
+           "Make a choice: "
+           );
 }
 
 void smpl_initialize(void)
@@ -152,7 +153,20 @@ void smpl_connect(void)
         printf("Please initialize RVI first!\n");
         return;
     }
-    int stat = rvi_connect(myHandle, "192.168.18.76", "9007");
+
+    char addr[BUFSIZE] = {0};
+    char port[BUFSIZE] = {0};
+
+    printf("Connect to address (ip:port): ");
+
+    scanf("%s:%s", addr, port);
+
+    if( addr == NULL || port == NULL ) {
+        printf("That's not a valid address.\n");
+        return;
+    }
+
+    int stat = rvi_connect(myHandle, addr, port);
     if( stat > 0 ) {
         printf("Connected to remote node on fd %d!\n", stat);
     } else {
@@ -202,8 +216,10 @@ void register_service(void)
         printf("Please initialize RVI first!\n");
         return;
     }
-    int stat = rvi_register_service(myHandle, "genivi.org/test", 
-                                        callbackFunc, NULL);
+    char service[BUFSIZE] = {0};
+    printf("What service would you like to register? ");
+    scanf("%s", service);
+    int stat = rvi_register_service(myHandle, service, callbackFunc, NULL);
     printf("stat after register service is %d\n", stat);
 }
 
@@ -213,7 +229,10 @@ void unregister_service(void)
         printf("Please initialize RVI first!\n");
         return;
     }
-    int stat = rvi_unregister_service(myHandle, "genivi.org/test");
+    char service[BUFSIZE] = {0};
+    printf("What service would you like to unregister? ");
+    scanf("%s", service);
+    int stat = rvi_unregister_service(myHandle, service);
     printf("stat after unregister service is %d\n", stat);
 }
 

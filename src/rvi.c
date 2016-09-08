@@ -607,6 +607,7 @@ int validate_credential( rvi_handle handle, char *cred )
     char            *key;
     jwt_t           *jwt;
     long            length;
+    time_t          rawtime;
 
     key = get_pubkey_file( ctx->cafile );
 
@@ -626,13 +627,26 @@ int validate_credential( rvi_handle handle, char *cred )
         goto exit;
     }
 
-    /* TODO: Check validity: start/stop */
+    /* Check validity: start/stop */
+    time(&rawtime);
+    char *validity_str = (char *)jwt_get_grant( jwt, "validity" );
+    json_t *validity = json_loads(validity_str, 0, NULL);
+
+    int start = json_integer_value( json_object_get( validity, "start" ) );
+    int stop = json_integer_value( json_object_get( validity, "stop" ) );
+
+    if( ( start > rawtime ) || ( stop < rawtime ) ) {
+        ret = -1;
+        goto exit;
+    }
 
     ret = RVI_OK;
 
 exit:
     jwt_free(jwt);
     if(key) free(key);
+    if(validity) json_decref(validity);
+    if(validity_str) free(validity_str);
 
     return ret;
 }
@@ -1004,11 +1018,11 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 
     /* create JSON array of all services */
     json_t *svcs = json_array();
-    if( rvi->service_name_idx ) {
+    if( rvi->service_name_idx->count ) {
         btree_iter iter = btree_iter_begin( rvi->service_name_idx );
         while ( !btree_iter_at_end( iter ) ) {
             rvi_service_t *stmp = btree_iter_data( iter );
-            json_array_append_new( creds, json_string( stmp->name ) );
+            json_array_append_new( svcs, json_string( stmp->name ) );
             btree_iter_next( iter );
         }
         btree_iter_cleanup( iter );
