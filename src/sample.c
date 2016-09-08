@@ -157,9 +157,13 @@ void smpl_connect(void)
     char addr[BUFSIZE] = {0};
     char port[BUFSIZE] = {0};
 
-    printf("Connect to address (ip:port): ");
+    printf("OK, which IP? ");
 
-    scanf("%s:%s", addr, port);
+    scanf("%s", addr);
+
+    printf("Got it. Which port at IP %s? ", addr);
+
+    scanf("%s", port);
 
     if( addr == NULL || port == NULL ) {
         printf("That's not a valid address.\n");

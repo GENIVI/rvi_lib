@@ -902,6 +902,7 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     json_error_t    jsonerr;
     int ret;
 
+    ret = RVI_OK;
     rvi = (rvi_context_t *)handle;
 
     /* 
@@ -931,6 +932,23 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
      */
     BIO_set_conn_hostname(sbio, addr);
     BIO_set_conn_port(sbio, port);
+
+    /* check if we're already connected to that host... */
+    if( rvi->remote_idx->count ) {
+        btree_iter iter = btree_iter_begin( rvi->remote_idx );
+        while( !btree_iter_at_end( iter ) ) {
+            rvi_remote_t *rtmp = btree_iter_data( iter );
+            if( strcmp( BIO_get_conn_hostname ( sbio ), 
+                        BIO_get_conn_hostname( rtmp->sbio )
+                      ) == 0 ) { /* We already have a connection to that host */
+                ret = -1;
+                break;
+            }
+            btree_iter_next( iter );
+        }
+        btree_iter_cleanup( iter );
+    }
+    if( ret != RVI_OK ) goto err;
 
     if(BIO_do_connect(sbio) <= 0) {
         ret = -RVI_ERROR_OPENSSL;
