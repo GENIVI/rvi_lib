@@ -80,10 +80,13 @@ typedef struct rvi_context_t {
 typedef struct rvi_remote_t {
     /** File descriptor for the connection */
     int fd;
-    /** json array for remote node's right(s) to register */
+    /* own right_to_receive */
     json_t *right_to_receive;
-    /** json array for remote node's right(s) to invoke */
+    /* own right_to_invoke */
     json_t *right_to_invoke;
+    /** List of rvi_rights_t structures, containing receive & invoke rights and
+     * expiration */
+//    rvi_rights_t *rightsHead;
     /** Pointer to data buffer for partial I/O operations */
     void *buf;
     /** Pointer to BIO chain from OpenSSL library */
@@ -104,6 +107,13 @@ typedef struct rvi_service_t {
     rvi_callback_t callback;
 } rvi_service_t, *rvi_service_p;
 
+/** Data structure for rights parsed from validated credential */
+typedef struct rvi_rights_t {
+    json_t *receive;    /* json array for right(s) to receive */
+    json_t *invoke;     /* json array for right(s) to invoke */
+    int expiration;     /* unix epoch time for jwt's validity.end */
+} rvi_rights_t, *rvi_rights_p;
+
 /* 
  * Declarations for internal functions not exposed in the API 
  */
@@ -115,7 +125,13 @@ void rvi_service_destroy ( rvi_service_t *service );
 
 rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd );
 
-void rvi_remote_destroy ( rvi_remote_t *remote);
+void rvi_remote_destroy ( rvi_remote_t *remote );
+
+rvi_rights_t *rvi_rights_create (   const char *right_to_receive, 
+                                    const char *right_to_invoke, 
+                                    const char *validity );
+
+void rvi_rights_destroy ( rvi_rights_t *rights );
 
 /* Comparison functions for constructing btrees and retrieving values */
 int compare_fd ( void *a, void *b );
@@ -135,7 +151,7 @@ int read_json_config ( rvi_handle handle, const char * filename );
 
 char *get_pubkey_file( char *filename );
 
-int validate_credential( rvi_handle handle, char *cred );
+int validate_credential( rvi_handle handle, char *cred, X509 *cert );
 
 int get_credential_rights( rvi_handle handle, const char *cred, 
                            json_t **rec_arr, json_t **inv_arr );
@@ -402,6 +418,8 @@ int read_json_config ( rvi_handle handle, const char * filename )
     struct dirent   *dir;
     FILE            *fp;
     rvi_context_t   *ctx;
+    BIO             *certbio;
+    X509            *cert;
     char            *cred = NULL;
 
     ctx = ( rvi_context_t * )handle;
@@ -446,6 +464,17 @@ int read_json_config ( rvi_handle handle, const char * filename )
         return RVI_ERROR_NOCRED;
     }
 
+    certbio = BIO_new_file( ctx->certfile, "r" );
+    if( !certbio ) {
+        return RVI_ERROR_NOCRED;
+    }
+    cert = PEM_read_bio_X509( certbio, NULL, 0, NULL);
+    if( !cert ) {
+        return RVI_ERROR_NOCRED;
+    }
+
+    BIO_free_all( certbio );
+
     int i = 0;
     while ( ( dir = readdir( d ) ) ) {
         if ( strstr( dir->d_name, ".jwt" ) ) {
@@ -468,7 +497,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
             } else {
                 cred[len++] = '\0'; /* Ensure string is null-terminated */
             }
-            if( validate_credential( handle, cred ) == RVI_OK ) {
+            if( validate_credential( handle, cred, cert ) == RVI_OK ) {
                 ctx->cred[i] = strdup( cred );
             }
             free(cred);
@@ -477,6 +506,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
         }
     }
 
+    X509_free( cert );
     closedir( d );
 
     return RVI_OK;
@@ -486,7 +516,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
 int get_credential_rights( rvi_handle handle, const char *cred, 
                            json_t **rec_arr, json_t **inv_arr )
 {
-    if( !handle || !cred || !rec_arr || !inv_arr )
+    if( !handle || !cred || /* !rights */ !rec_arr || !inv_arr )
         return EINVAL;
 
     rvi_context_p   ctx = (rvi_context_p)handle;
@@ -494,23 +524,54 @@ int get_credential_rights( rvi_handle handle, const char *cred,
     json_error_t    jsonerr;
     char            *key;
     int             ret;
+    time_t          rawtime;
 
     if( !( key = get_pubkey_file( ctx->cafile ) ) ) {
         ret = -1;
         goto exit;
     }
 
+    /* Load the JWT into memory from base64-encoded string */
     ret = jwt_decode(&jwt, cred, (unsigned char *)key, strlen(key));
+    if( ret != 0 )
+        goto exit;
 
+    /* Check that we are using public/private key cryptography */
+    if( jwt_get_alg( jwt ) != JWT_ALG_RS256 ) {
+        ret = 1; 
+        goto exit;
+    }
+    
+    /* Check validity: start/stop */
+    time(&rawtime);
+    char *validity_str = (char *)jwt_get_grant( jwt, "validity" );
+    json_t *validity = json_loads(validity_str, 0, NULL);
+
+    int start = json_integer_value( json_object_get( validity, "start" ) );
+    int stop = json_integer_value( json_object_get( validity, "stop" ) );
+
+    if( ( start > rawtime ) || ( stop < rawtime ) ) {
+        ret = -1;
+        goto exit;
+    }
+    
+    //rights->expiration = stop;
+
+
+    /* Load the rights to receive */
     char *rcv = (char *)jwt_get_grant( jwt, "right_to_receive" );
 
+//    rights->receive = json_loads( rcv, 0, &jsonerr );
     *rec_arr = json_loads( rcv, 0, &jsonerr );
  
     free( rcv );
 
+    /* Load the right to invoke */
     char *inv = (char *)jwt_get_grant( jwt, "right_to_invoke" );
 
     *inv_arr = json_loads( inv, 0, &jsonerr );
+
+//    rights->invoke = json_loads( inv, 0, &jsonerr );
 
     free( inv );
 
@@ -520,6 +581,8 @@ int get_credential_rights( rvi_handle handle, const char *cred,
 exit:
     free(key);
     jwt_free(jwt);
+    if ( validity ) json_decref( validity );
+    if ( validity_str ) free( validity_str );
 
     return ret;
 }
@@ -597,7 +660,7 @@ exit:
  *
  * Returns RVI_OK (0) on success, or an error code on failure.
  */
-int validate_credential( rvi_handle handle, char *cred )
+int validate_credential( rvi_handle handle, char *cred, X509 *cert )
 {
     if( !handle || !cred )
         return EINVAL;
@@ -608,6 +671,12 @@ int validate_credential( rvi_handle handle, char *cred )
     jwt_t           *jwt;
     long            length;
     time_t          rawtime;
+    BIO             *bio;
+    X509            *dcert;
+    const char      *certHead = "-----BEGIN CERTIFICATE-----\n";
+    const char      *certFoot = "\n-----END CERTIFICATE-----";
+
+    ret = RVI_OK;
 
     key = get_pubkey_file( ctx->cafile );
 
@@ -640,13 +709,25 @@ int validate_credential( rvi_handle handle, char *cred )
         goto exit;
     }
 
-    ret = RVI_OK;
+    const char *device_cert = jwt_get_grant( jwt, "device_cert" );
+    char *tmp = malloc( strlen( device_cert ) + strlen( certHead ) 
+                        + strlen ( certFoot ) + 1 );
+    sprintf(tmp, "%s%s%s", certHead, device_cert, certFoot);
+
+    /* Check that certificate in credential matches expected cert */
+    bio = BIO_new( BIO_s_mem() );
+    BIO_puts( bio, (const char *)tmp );
+    dcert = PEM_read_bio_X509( bio, NULL, 0, NULL );
+    ret = X509_cmp( dcert, cert );
 
 exit:
-    jwt_free(jwt);
-    if(key) free(key);
-    if(validity) json_decref(validity);
-    if(validity_str) free(validity_str);
+    jwt_free( jwt );
+    if( key ) free( key );
+    if( validity ) json_decref( validity );
+    if( validity_str ) free( validity_str );
+    if( tmp ) free( tmp );
+    BIO_free_all( bio );
+    X509_free( dcert );
 
     return ret;
 }
@@ -894,6 +975,7 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 
     BIO*            sbio;
     SSL*            ssl;
+    X509            *peercert;
     rvi_remote_t*   remote;
     rvi_context_t*  rvi;
     int             len;
@@ -1022,9 +1104,14 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     size_t index;
     json_t *value;
 
+    peercert = SSL_get_peer_certificate( ssl );
+
     json_t *tmp = json_object_get(json, "creds");
     json_array_foreach(tmp, index, value) {
         const char *val = json_string_value ( value );
+        if( ! ( validate_credential ( handle, val, peercert ) == RVI_OK ) ) {
+            continue;
+        }
         ret = get_credential_rights( 
                     handle, val, 
                     &remote->right_to_receive, &remote->right_to_invoke 
