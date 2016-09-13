@@ -151,7 +151,7 @@ int read_json_config ( rvi_handle handle, const char * filename );
 
 char *get_pubkey_file( char *filename );
 
-int validate_credential( rvi_handle handle, char *cred, X509 *cert );
+int validate_credential( rvi_handle handle, const char *cred, X509 *cert );
 
 int get_credential_rights( rvi_handle handle, const char *cred, 
                            json_t **rec_arr, json_t **inv_arr );
@@ -301,8 +301,7 @@ void rvi_remote_destroy ( rvi_remote_t *remote)
         return;
     }
 
-    if( remote->sbio )
-        BIO_free_all ( remote->sbio );
+    BIO_free_all ( remote->sbio );
     json_decref ( remote->right_to_receive );
     json_decref ( remote->right_to_invoke );
     free ( remote->buf );
@@ -656,11 +655,16 @@ exit:
  *
  * Tests:
  *  * Signed by trusted authority
- *  * TODO: Current time falls in range specified by "validity"
+ *  * Timestamp is valid
+ *  * Embedded device cert matches supplied cert
  *
- * Returns RVI_OK (0) on success, or an error code on failure.
+ * @param[in] handle    - handle to the RVI context
+ * @param[in] cred      - JWT-encoded RVI credential
+ * @param[in] cert      - the expected certificate for the device, e.g., peer certificate
+ *
+ * @return RVI_OK (0) on success, or an error code on failure.
  */
-int validate_credential( rvi_handle handle, char *cred, X509 *cert )
+int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
 {
     if( !handle || !cred )
         return EINVAL;
@@ -671,8 +675,8 @@ int validate_credential( rvi_handle handle, char *cred, X509 *cert )
     jwt_t           *jwt;
     long            length;
     time_t          rawtime;
-    BIO             *bio;
-    X509            *dcert;
+    BIO             *bio = {0};
+    X509            *dcert = {0};
     const char      *certHead = "-----BEGIN CERTIFICATE-----\n";
     const char      *certFoot = "\n-----END CERTIFICATE-----";
 
@@ -1199,8 +1203,12 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     return remote->fd;
 
 err:
-    ERR_print_errors_fp(stderr);
-    BIO_free_all(sbio);
+    ERR_print_errors_fp( stderr );
+    if( remote ) {
+        rvi_remote_destroy( remote );
+    } else {
+        BIO_free_all( sbio );
+    }
 
     return ret;
 }
@@ -1234,25 +1242,19 @@ int rvi_disconnect(rvi_handle handle, int fd)
                              ctx->remote_idx->root, rtmp ) ) < 0 ) {
         printf("Error deleting remote key from tree\n");
         return -1;
-    } else {
-        /* Search the service tree for any services registered by the remote */
-        skey.registrant = fd;
-        while((stmp = btree_search(ctx->service_reg_idx, &skey))) {
-            /* We have a match, so delete the service and free the node from
-             * the tree */
-            if((res = btree_delete(ctx->service_reg_idx, 
-                                   ctx->service_reg_idx->root, stmp)) < 0) {
-                printf("Error deleting service key from tree\n");
-            } else {
-                btree_delete(ctx->service_name_idx, 
-                             ctx->service_name_idx->root, stmp);
-                /* Close connection & free memory for the service structure */
-                rvi_service_destroy(stmp);
-            }
-        }
-
-        rvi_remote_destroy( rtmp );
+    } 
+    /* Search the service tree for any services registered by the remote */
+    skey.registrant = fd;
+    while((stmp = btree_search(ctx->service_reg_idx, &skey))) {
+        /* We have a match, so delete the service and free the node from
+        * the tree */
+        btree_delete(ctx->service_name_idx, ctx->service_name_idx->root, stmp);
+        btree_delete(ctx->service_reg_idx, ctx->service_reg_idx->root, stmp);
+        /* Close connection & free memory for the service structure */
+        rvi_service_destroy(stmp);
     }
+
+    rvi_remote_destroy( rtmp );
 
     return RVI_OK;
 }
