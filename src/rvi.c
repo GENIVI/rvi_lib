@@ -1122,7 +1122,8 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
                   );
     }
 
-    json_decref(json);
+    json_decref( json );
+    X509_free( peercert );
     
 
     /* create JSON array of all services */
