@@ -677,8 +677,8 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
     time_t          rawtime;
     BIO             *bio = {0};
     X509            *dcert = {0};
-    const char      *certHead = "-----BEGIN CERTIFICATE-----\n";
-    const char      *certFoot = "\n-----END CERTIFICATE-----";
+    const char      certHead[] = "-----BEGIN CERTIFICATE-----\n";
+    const char      certFoot[] = "\n-----END CERTIFICATE-----";
 
     ret = RVI_OK;
 
@@ -1511,11 +1511,92 @@ exit:
 
 int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
 {
-    /* For each fd... */
-    /*      Look up SSL session by fd from remote_idx */
-    /*      Store its current blocking/nonblocking status */
-    /*      Set it to blocking */
-    /* */
+    if( !handle || !fd_arr || ( fd_len < 1 ) )
+        return EINVAL;
+
+    rvi_context_t   *ctx    = (rvi_context_t *)handle;
+    rvi_remote_t    rkey    = {0};
+    rvi_remote_t    *rtmp   = NULL;
+    char            cmd[5]  = {0};
+
+    SSL             *ssl    = NULL;
+    json_t          *root   = NULL;
+    json_error_t    jserr   = {0};
+
+    int             len     = 1024 * 8;
+    int             read    = 0;
+    char            *buf    = {0};
+    long            mode    = 0;
+    int             i       = 0;
+    int             err     = 0;
+
+    BIO             *out = BIO_new_fp( stdout, BIO_NOCLOSE );
+
+    /* For each file descriptor we've received */
+    while( i < fd_len ) {
+        rkey.fd = fd_arr[i]; /* Set the key to the requested fd */
+        i++;
+        rtmp = btree_search( ctx->remote_idx, &rkey ); /* Find the connection */
+        BIO_get_ssl( rtmp->sbio, &ssl );
+        if( !ssl ) {
+            printf( "Error reading on fd %d, try again\n", rtmp->fd );
+            continue;
+        }
+        /* Grab the current mode flags from the session */
+        mode = SSL_get_mode ( ssl );
+        /* Ensure our mode is blocking */
+        SSL_set_mode( ssl, SSL_MODE_AUTO_RETRY );
+        
+        if( !( buf = malloc( len + 1 ) ) ) {
+            err = ENOMEM;
+            goto exit;
+        }
+
+        memset( buf, 0, len );
+
+        while( ( read = BIO_read( rtmp->sbio, buf, len ) ) >= 0 ) {
+            BIO_printf( out, "RECEIVED: %s\n", buf );
+
+            root = json_loads( buf, 0, &jserr ); /* RVI commands are JSON structs */
+            if( !root ) {
+                err = RVI_ERROR_JSON;
+                goto exit;
+            }
+
+            /* We no longer need the string we received */
+            memset( buf, 0, len );
+
+            /* Get RVI cmd from string */
+            strcpy( cmd, json_string_value( json_object_get( root, "cmd" ) ) );
+
+
+            if( strcmp( cmd, "au" ) ) {
+                /* Process "au" */
+                BIO_printf( out, "Got cmd: %s\n", cmd ); 
+            } else if( strcmp( cmd, "sa" ) ) {
+                /* Process "sa" */
+                BIO_printf( out, "Got cmd: %s\n", cmd ); 
+            } else if( strcmp( cmd, "rcv" ) ) {
+                /* Process "rcv" */
+                BIO_printf( out, "Got cmd: %s\n", cmd ); 
+            } else if( strcmp( cmd, "ping" ) ) {
+                /* Reply to a ping */
+                BIO_printf( out, "Got cmd: %s\n", cmd ); 
+            } else { /* UNKNOWN RVI COMMAND */
+                BIO_printf( out, "Unknown command: %s\n", cmd ); 
+                err = -1; /* TODO: Change error */
+                goto exit;
+            }
+
+            json_decref( root );
+        }
+        
+        free( buf );
+
+        /* Set the mode back to its original bitmask */
+        SSL_set_mode( ssl, mode );
+    }
+
     /*      Perform SSL_read */
     /*          if au: */
     /*              perform all au work */
@@ -1530,6 +1611,9 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
     /*              return ping */
     /*       */
     /*      Set fd to stored blocking/nonblocking status */
-    printf("Finish the process input function...\n");
-    return 0;
+
+exit:
+    BIO_free_all( out );
+
+    return err;
 }
