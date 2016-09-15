@@ -214,6 +214,10 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
  * populated only with read-ready descriptors (returned by, e.g., (e)poll() or
  * select()).
  *
+ * This operation will read one message from each file descriptor provided. The
+ * calling application should poll using a level trigger, since multiple
+ * messages may be pending on a single connection.
+ *
  * This is a blocking operation. If any descriptor in fd_arr is not read-ready,
  * the operation will block until data becomes available to read on the
  * descriptor.

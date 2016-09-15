@@ -56,11 +56,13 @@ typedef struct rvi_context_t {
                                 /*  note: local services registered by stdin */
 
     /* Properties set in configuration file */
-    char *cadir; /* Directory containing the trusted certificate store */
-    char *creddir; /* Directory containing base64-encoded JWT credentials */
+    char *cadir;    /* Directory containing the trusted certificate store */
+    char *creddir;  /* Directory containing base64-encoded JWT credentials */
     char *certfile; /* File containing X.509 public key certificate (PKC) */
     char *keyfile;  /* File containing corresponding private key */
     char *cafile;   /* File containing CA public key certificate(s) */
+    char *id;       /* Unique device ID. Format is "domain/type/uuid", e.g.: */
+                    /* genivi.org/node/839fc839-5fab-472f-87b3-a8fbbd7e3935 */
 
     /* Array of RVI credentials loaded into memory for quick access when 
      * negotiating connections */
@@ -105,6 +107,8 @@ typedef struct rvi_service_t {
     int registrant;
     /** Callback function to execute upon service invocation */
     rvi_callback_t callback;
+    /** Service data to be passed to the callback */
+    void *data;
 } rvi_service_t, *rvi_service_p;
 
 /** Data structure for rights parsed from validated credential */
@@ -119,7 +123,8 @@ typedef struct rvi_rights_t {
  */
 
 rvi_service_t *rvi_service_create ( const char *name, const int registrant, 
-                                    const rvi_callback_t callback );
+                                    const rvi_callback_t callback, 
+                                    const void *service_data );
 
 void rvi_service_destroy ( rvi_service_t *service );
 
@@ -155,6 +160,18 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert );
 
 int get_credential_rights( rvi_handle handle, const char *cred, 
                            json_t **rec_arr, json_t **inv_arr );
+
+int rvi_remove_service(rvi_handle handle, const char *service_name);
+
+int rvi_read_au( rvi_handle handle, json_t *msg, rvi_remote_t *remote );
+
+int rvi_write_au( rvi_handle handle, rvi_remote_t *remote );
+
+int rvi_read_sa( rvi_handle handle, json_t *msg, rvi_remote_t *remote );
+
+int rvi_write_sa( rvi_handle handle, rvi_remote_t *remote );
+
+int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote );
 
 /****************************************************************************/
 
@@ -212,7 +229,8 @@ int compare_name ( void *a, void *b )
  */
 
 rvi_service_t *rvi_service_create ( const char *name, const int registrant, 
-                                    const rvi_callback_t callback )
+                                    const rvi_callback_t callback, 
+                                    const void *service_data )
 {
     /* If name is NULL or registrant is negative, there's an error */
     if ( !name || (registrant < 0) )
@@ -230,6 +248,9 @@ rvi_service_t *rvi_service_create ( const char *name, const int registrant,
 
     /* Set the callback. NULL is valid. */
     service->callback = callback;
+
+    /* Set the data to pass to the callback. NULL is valid */
+    service->data = service_data;
 
     /* TODO: Walk the tree of remotes to check for matches in may_register and
      * may_invoke to add to array 
@@ -438,6 +459,9 @@ int read_json_config ( rvi_handle handle, const char * filename )
                 json_object_get( tmp, "key" ) ) );
     ctx->certfile = strdup( json_string_value( 
                 json_object_get( tmp, "cert" ) ) );
+    ctx->id = strdup( json_string_value(
+                json_object_get ( tmp, "id" ) ) );
+
 
     tmp = json_object_get ( conf, "ca" );
     if(!tmp) {
@@ -601,44 +625,51 @@ char *get_pubkey_file( char *filename )
     int         ret = RVI_OK;
 
     /* Get public key from root certificate */
-    /* First, load root certificate into memory */
+    /* First, load PEM string into memory */
     if( !( certbio = BIO_new_file( filename, "r" ) ) ) {
         ret = ENOMEM; 
         goto exit;
     }
+    /* Then read the certificate from the string */
     if( !( cert = PEM_read_bio_X509( certbio, NULL, 0, NULL ) ) ) {
         ret = 1; 
         goto exit; 
-    }
+    } 
+    /* Get the public key from the certificate */
     if( !( pkey = X509_get_pubkey(cert) ) ) {
         ret = 1; 
         goto exit;
     }
+    /* Make a new memory BIO */
     if( !( mbio = BIO_new(BIO_s_mem() ) ) ) {
         ret = ENOMEM;
         goto exit;
     }
+    /* Write the pubkey to the new BIO as a PEM-formatted string */
     ret = PEM_write_bio_PUBKEY(mbio, pkey);
+
     if( ret == 0 ) {
         ret = RVI_ERROR_OPENSSL;
         goto exit;
     }
-
+    /* Find out how long our new string is */
     length = BIO_ctrl_pending(mbio);
+    /* Allocate a buffer for the key string... */
     if( !( key = malloc( length + 1 ) ) ) {
         ret = ENOMEM;
         goto exit;
     }
-
+    /* Load the string into memory */
     if( (ret = BIO_read(mbio, key, length)) != length) {
         goto exit;
     }
-
+    /* Make sure it's null-formatted, just in case */
     key[length] = '\0';
 
     ret = RVI_OK;
 
 exit:
+    /* Free all the memory */
     EVP_PKEY_free(pkey);
     X509_free(cert);
     BIO_free_all(certbio);
@@ -682,6 +713,7 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
 
     ret = RVI_OK;
 
+    /* Get the public key from the trusted CA */
     key = get_pubkey_file( ctx->cafile );
 
     if( !key ) {
@@ -691,10 +723,12 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
 
     length = strlen(key) + 1;
 
+    /* If token does not pass sig check, libjwt supplies errno */
     if( ( ret = jwt_decode( &jwt, cred, (unsigned char *)key, length ) ) ) {
         goto exit;
     }
 
+    /* RVI credentials use RS256 */
     if( jwt_get_alg( jwt ) != JWT_ALG_RS256 ) {
         ret = 1; 
         goto exit;
@@ -934,6 +968,8 @@ int rvi_cleanup(rvi_handle handle)
         free ( ctx->cadir );
     if( ctx->creddir )
         free ( ctx->creddir );
+    if( ctx->id )
+        free ( ctx->id );
 
     if( ctx->right_to_receive )
         json_decref ( ctx->right_to_receive );
@@ -979,21 +1015,16 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 
     BIO*            sbio;
     SSL*            ssl;
-    X509            *peercert;
     rvi_remote_t*   remote;
     rvi_context_t*  rvi;
-    int             len;
-    char            tmpbuf[BUFLEN] = {0};
-    json_t          *json;
-    json_error_t    jsonerr;
     int ret;
 
     ret = RVI_OK;
     rvi = (rvi_context_t *)handle;
 
     /* 
-     * Spawn new SSL session from handle->ctx. BIO_new_ssl_connect spawns a new 
-     * chain including a BIO and an SSL object 
+     * Spawn new SSL session from handle->ctx. BIO_new_ssl_connect spawns a new
+     * chain including a SSL BIO (using ctx) and a connect BIO
      */
     sbio = BIO_new_ssl_connect(rvi->ssl_ctx);
     if(!sbio) {
@@ -1051,148 +1082,16 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     /* Add this data structure to our lookup tree */
     btree_insert(rvi->remote_idx, remote);
     
-    /* prepare "au" message */
-    json_t *creds = json_array();
-
-    /* create JSON array of all credentials */
-    if(rvi->cred) {
-        int i = 0;
-        while ( rvi->cred[i] != NULL ) {
-            json_array_append_new( creds, json_string(rvi->cred[i]) );
-            i++;
-        }
-    }
-
-    json_t *au = json_pack( "{s:s, s:s, s:o}", 
-            "cmd", "au",            /* populate cmd */
-            "ver", "1.1",           /* populate version */
-            "creds", creds   /* fill with json array */
-            ); 
-    if( !au ) {
-        ret = RVI_ERROR_JSON;
-        goto err;
-    }
-
-    char *auString = json_dumps(au, JSON_COMPACT);
-
-    /* send "au" message */
-    BIO_puts(sbio, auString);
-
-    free(auString);
-    json_decref(au);
-
-    /* parse incoming "au" message */
-    if( ( len = BIO_read(sbio, tmpbuf, BUFLEN) ) <= 0 ) {
-        ret = -RVI_ERROR_OPENSSL;
-        goto err;
-    }
-    /*
-    * We received a reply from the server, we expect it to be an "au" msg
-    */ 
-    json = json_loads( tmpbuf, 0, &jsonerr );
-    if( !json ) {
-            ret = -RVI_ERROR_JSON;
-            goto err;
-    }
-
-    memset( tmpbuf, 0, BUFLEN );
-
-    if( strcmp(
-                json_string_value( json_object_get( json, "cmd" ) ),
-                "au" 
-              ) != 0) {
-        ret = -RVI_ERROR_JSON;
-        goto err;
-    }
-
-    size_t index;
-    json_t *value;
-
-    peercert = SSL_get_peer_certificate( ssl );
-
-    json_t *tmp = json_object_get(json, "creds");
-    json_array_foreach(tmp, index, value) {
-        const char *val = json_string_value ( value );
-        if( ! ( validate_credential ( handle, val, peercert ) == RVI_OK ) ) {
-            continue;
-        }
-        ret = get_credential_rights( 
-                    handle, val, 
-                    &remote->right_to_receive, &remote->right_to_invoke 
-                  );
-    }
-
-    json_decref( json );
-    X509_free( peercert );
+    rvi_write_au( handle, remote ); 
     
+    /* parse incoming "au" message */
+    rvi_process_input( handle, &remote->fd, 1 );
 
     /* create JSON array of all services */
-    json_t *svcs = json_array();
-    if( rvi->service_name_idx->count ) {
-        btree_iter iter = btree_iter_begin( rvi->service_name_idx );
-        while ( !btree_iter_at_end( iter ) ) {
-            rvi_service_t *stmp = btree_iter_data( iter );
-            json_array_append_new( svcs, json_string( stmp->name ) );
-            btree_iter_next( iter );
-        }
-        btree_iter_cleanup( iter );
-    }
-
-    /* prepare "sa" reply */
-    /*      search services_by_may_register to match remote->right_to_invoke */
-    /*      if the registrant is local, add service name to "sa" reply */
-    json_t *sa = json_pack( "{s:s, s:s, s:o}", 
-            "cmd", "sa",            /* populate cmd */
-            "stat", "av",           /* populate status */
-            "svcs", svcs              /* fill with array of services */
-            ); /* TODO: Fill with full array of services */
-    if( !sa ) {
-        ret = RVI_ERROR_JSON;
-        goto err;
-    }
-
-    /* send "sa" reply */
-    char *saString = json_dumps(sa, JSON_COMPACT);
-
-    BIO_puts(sbio, saString);
-
-    free(saString);
-    json_decref(sa);
+    rvi_write_sa( handle, remote );
 
     /* parse incoming "sa" message */
-    if( ( len = BIO_read( sbio, tmpbuf, BUFLEN ) ) <= 0 ) {
-        ret = -RVI_ERROR_OPENSSL;
-        goto err;
-    }
-    json = json_loads( tmpbuf, 0, &jsonerr );
-    if( !json ) {
-        ret = -RVI_ERROR_JSON;
-        goto err;
-    }
-
-    memset( tmpbuf, 0, BUFLEN );
-
-    if( strcmp(
-                json_string_value( json_object_get( json, "cmd" ) ),
-                "sa" 
-              ) != 0) {
-        ret = -RVI_ERROR_JSON;
-        goto err;
-    }
-
-    tmp = json_object_get(json, "svcs");
-    /* for each service in services array, create new rvi_service_t */
-    json_array_foreach(tmp, index, value) {
-        /* set new_service->name to service string */
-        const char *val = json_string_value( value );
-        /* set new_service->registrant to remote->fd */
-        rvi_service_t *service = rvi_service_create( val, remote->fd, NULL );
-        
-        btree_insert( rvi->service_name_idx, service );
-        btree_insert( rvi->service_reg_idx, service );
-    }
-
-    json_decref(json);
+    rvi_process_input( handle, &remote->fd, 1 );
 
     /*      search connections_by_right_to_receive to match name */
     /*          for each match, add to new_service->may_register */
@@ -1205,11 +1104,8 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 
 err:
     ERR_print_errors_fp( stderr );
-    if( remote ) {
-        rvi_remote_destroy( remote );
-    } else {
-        BIO_free_all( sbio );
-    }
+    rvi_remote_destroy( remote );
+    BIO_free_all( sbio );
 
     return ret;
 }
@@ -1224,6 +1120,9 @@ err:
  */
 int rvi_disconnect(rvi_handle handle, int fd)
 {
+    if( !handle || fd < 3 ) 
+        return EINVAL;
+    
     rvi_context_t * ctx = (rvi_context_t *)handle;
     rvi_remote_t    rkey = {0};
     rvi_remote_t *  rtmp;
@@ -1310,9 +1209,6 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
 /* RVI SERVICE MANAGEMENT */
 /* ********************** */
 
-/** Internal utility functions for services not exposed in public API */
-
-int remove_service(rvi_handle handle, const char *service_name);
 
 /** @brief Register a service with a callback function
  *
@@ -1324,24 +1220,38 @@ int remove_service(rvi_handle handle, const char *service_name);
  * @return 0 (RVI_OK) on success 
  *         Error code on failure.
  */
-int rvi_register_service(rvi_handle handle, const char *service_name, 
-                         rvi_callback_t callback, void *service_data)
+int rvi_register_service( rvi_handle handle, const char *service_name, 
+                          rvi_callback_t callback, void *service_data )
 {
-    /* Compare service name to handle->right_to_receive */
+    if( !handle || !service_name )
+        return EINVAL;
+
+    rvi_context_t *ctx      =   (rvi_context_t *)handle;
+    rvi_service_t *service  = NULL;
+
+    /* TODO: Get fully qualified service name */
+
+    /* TODO: Compare service name to handle->right_to_receive */
     /* If no match, return error */
+
     /* Create a new rvi_service_t structure */
     /* Set service->name to service_name */
     /* Set service->callback to callback */
     /* Set service->registrant to stdin */
-    /* Add stdin to service->may_register */
+    service = rvi_service_create( service_name, 0, callback, service_data );
+
+    /* Add stdin to service->may_receive */
     /* Search remotes by right_to_invoke; add to service->may_invoke */
     /* Search remotes by right_to_receive; add to service->may_register */
     /* If service->may_invoke is non-empty, prepare sa message */
     /*      For each fd in service->may_invoke, */
     /*      send sa message making service stat av */
+
     /* Add service to services_by_name */
+    btree_insert( ctx->service_name_idx, service );
     /* Add service to services_by_registrant */
-    printf("Write the register service function.\n");
+    btree_insert( ctx->service_reg_idx, service );
+
     return 0;
 }
 
@@ -1359,22 +1269,34 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name)
         return EINVAL;
     /* if service_name is not in services_by_name, return error */
     /* if service->registrant is not stdin, return error */
-    return remove_service(handle, service_name);
-}
-
-int remove_service(rvi_handle handle, const char *service_name)
-{
-    if( !handle || !service_name )
-        return EINVAL;
     /* if service->may_invoke is not empty, prepare sa message */
     /*      for each fd in service->may_invoke */
     /*      send sa message making service_name stat un */
-    /* Remove service from services_by_name */
-    /* Remove service from services_by_fd */
-    /* Free service */
+    return rvi_remove_service(handle, service_name);
+}
 
-   printf("Write the unregister service function.\n");
-   return 0;
+int rvi_remove_service(rvi_handle handle, const char *service_name)
+{
+    if( !handle || !service_name )
+        return EINVAL;
+
+    rvi_context_t   *ctx    = ( rvi_context_t * )handle;
+    rvi_service_t   skey    = {0};
+    
+    skey.name = strdup( service_name );
+    rvi_service_t *stmp = btree_search( ctx->service_name_idx, &skey );
+
+    free( skey.name );
+    
+    if( !stmp )
+        return -1;
+    btree_delete( ctx->service_name_idx, 
+                          ctx->service_name_idx->root, stmp );
+    btree_delete( ctx->service_reg_idx, 
+                          ctx->service_reg_idx->root, stmp );
+    rvi_service_destroy( stmp );
+
+    return 0;
 }
 
 /** @brief Get list of services available
@@ -1393,7 +1315,7 @@ int remove_service(rvi_handle handle, const char *service_name)
  */
 int rvi_get_services(rvi_handle handle, char **result, int *len)
 {
-    if( !handle || !result || !len )
+    if( !handle || !result || ( *len < 1 ) )
         return EINVAL;
 
     rvi_context_t *ctx = (rvi_context_t *)handle;
@@ -1530,8 +1452,6 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
     int             i       = 0;
     int             err     = 0;
 
-    BIO             *out = BIO_new_fp( stdout, BIO_NOCLOSE );
-
     /* For each file descriptor we've received */
     while( i < fd_len ) {
         rkey.fd = fd_arr[i]; /* Set the key to the requested fd */
@@ -1546,74 +1466,276 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
         mode = SSL_get_mode ( ssl );
         /* Ensure our mode is blocking */
         SSL_set_mode( ssl, SSL_MODE_AUTO_RETRY );
-        
-        if( !( buf = malloc( len + 1 ) ) ) {
-            err = ENOMEM;
-            goto exit;
-        }
+
+        buf = malloc( len + 1 );
+        if( !buf ) { err = ENOMEM; goto exit; }
 
         memset( buf, 0, len );
 
-        while( ( read = BIO_read( rtmp->sbio, buf, len ) ) >= 0 ) {
-            BIO_printf( out, "RECEIVED: %s\n", buf );
+        read = BIO_read( rtmp->sbio, buf, len );
+        if( read  <= 0 )  { err = EIO; goto exit; } 
 
-            root = json_loads( buf, 0, &jserr ); /* RVI commands are JSON structs */
-            if( !root ) {
-                err = RVI_ERROR_JSON;
-                goto exit;
-            }
+        root = json_loads( buf, 0, &jserr ); /* RVI commands are JSON structs */
+        if( !root ) { err = RVI_ERROR_JSON; goto exit; }
 
-            /* We no longer need the string we received */
-            memset( buf, 0, len );
+        /* Get RVI cmd from string */
+        strcpy( cmd, json_string_value( json_object_get( root, "cmd" ) ) );
 
-            /* Get RVI cmd from string */
-            strcpy( cmd, json_string_value( json_object_get( root, "cmd" ) ) );
-
-
-            if( strcmp( cmd, "au" ) ) {
-                /* Process "au" */
-                BIO_printf( out, "Got cmd: %s\n", cmd ); 
-            } else if( strcmp( cmd, "sa" ) ) {
-                /* Process "sa" */
-                BIO_printf( out, "Got cmd: %s\n", cmd ); 
-            } else if( strcmp( cmd, "rcv" ) ) {
-                /* Process "rcv" */
-                BIO_printf( out, "Got cmd: %s\n", cmd ); 
-            } else if( strcmp( cmd, "ping" ) ) {
-                /* Reply to a ping */
-                BIO_printf( out, "Got cmd: %s\n", cmd ); 
-            } else { /* UNKNOWN RVI COMMAND */
-                BIO_printf( out, "Unknown command: %s\n", cmd ); 
-                err = -1; /* TODO: Change error */
-                goto exit;
-            }
-
-            json_decref( root );
+        if( strcmp( cmd, "au" ) == 0 ) {
+            rvi_read_au( handle, root, rtmp );
+        } else if( strcmp( cmd, "sa" ) == 0 ) {
+            rvi_read_sa( handle, root, rtmp );
+        } else if( strcmp( cmd, "rcv" ) == 0 ) {
+            rvi_read_rcv( handle, root, rtmp );
+        } else if( strcmp( cmd, "ping" ) == 0 ) {
+            /* Echo the ping back */
+            BIO_puts( rtmp->sbio, buf );
+        } else { /* UNKNOWN RVI COMMAND */
+            err = -1; /* TODO: More informative error */
+            goto exit;
         }
-        
-        free( buf );
 
-        /* Set the mode back to its original bitmask */
-        SSL_set_mode( ssl, mode );
+        /* We no longer need the string we received */
+        memset( buf, 0, len );
+
+        json_decref( root );
     }
+        
+    free( buf );
 
-    /*      Perform SSL_read */
-    /*          if au: */
-    /*              perform all au work */
-    /*          if sa: */
-    /*              validate service name(s) against remote's right_to_receive */
-    /*              update service list */
-    /*          if rcv: */
-    /*              validate service name(s) against remote's right_to_invoke */
-    /*              look up service by name */
-    /*              invoke callback, passing parameters (if any) */
-    /*          if ping: */
-    /*              return ping */
-    /*       */
-    /*      Set fd to stored blocking/nonblocking status */
+    /* Set the mode back to its original bitmask */
+    SSL_set_mode( ssl, mode );
 
 exit:
-    BIO_free_all( out );
+    return err;
+}
 
+int rvi_read_au( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
+{
+    if( !handle || !msg || !remote )
+        return EINVAL;
+
+    int             err     = 0;
+    SSL             *ssl    = NULL;
+    size_t          index;
+    json_t          *value  = NULL;
+    X509            *cert   = NULL;
+    json_t          *tmp    = NULL;
+
+    tmp = json_object_get( msg, "creds" );
+    if( !tmp ) {
+        err = RVI_ERROR_JSON;
+        goto exit;
+    }
+
+    BIO_get_ssl( remote->sbio, &ssl );
+    if( !ssl ) {
+        err = RVI_ERROR_OPENSSL;
+        goto exit;
+    }
+
+    if( ! ( cert = SSL_get_peer_certificate( ssl ) ) ) {
+        err = RVI_ERROR_OPENSSL;
+        goto exit;
+    }
+
+    json_array_foreach( tmp, index, value ) {
+        const char *val = json_string_value( value );
+        if(  validate_credential( handle, val, cert ) != RVI_OK ) {
+            continue;
+        }
+        err = get_credential_rights( 
+                                    handle, val, 
+                                    &remote->right_to_receive, 
+                                    &remote->right_to_invoke 
+                                   );
+        if( err ) goto exit;
+    }
+
+exit:
+    if( cert ) X509_free( cert );
+    return err;
+}
+
+int rvi_write_au( rvi_handle handle, rvi_remote_t *remote )
+{
+    if( !handle || !remote )
+        return EINVAL;
+
+    int             err     = RVI_OK;
+    rvi_context_t   *ctx    = ( rvi_context_t * )handle;
+    json_t          *creds  = NULL;
+    json_t          *au     = NULL;
+
+
+    creds = json_array();
+    if( ctx->cred ) {
+        int i = 0;
+        while ( ctx->cred[i] != NULL ) {
+            json_array_append_new( creds, json_string( ctx->cred[i] ) );
+            i++;
+        }
+    }
+
+    au = json_pack( "{s:s, s:s, s:o}", 
+                    "cmd", "au",            /* populate cmd */
+                    "ver", "1.1",           /* populate version */
+                    "creds", creds   /* fill with json array */
+                  ); 
+    if( !au ) {
+        err = RVI_ERROR_JSON;
+        goto exit;
+    }
+
+    char *auString = json_dumps(au, JSON_COMPACT);
+
+    /* send "au" message */
+    BIO_puts( remote->sbio, auString );
+
+exit:
+    free( auString );
+    json_decref( au );
+
+    return err;
+}
+
+int rvi_read_sa( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
+{
+    if( !handle || !msg || !remote )
+        return EINVAL;
+
+    int             err     = 0;
+    rvi_context_t   *ctx    = ( rvi_context_t * )handle;
+    size_t          index;
+    json_t          *value  = NULL;
+    json_t          *tmp    = NULL;
+    int             av      = 0;
+
+    tmp = json_object_get( msg, "svcs" );
+    if( !tmp ) {
+        err = RVI_ERROR_JSON;
+        goto exit;
+    }
+
+    const char *stat = json_string_value( json_object_get( msg, "stat" ) );
+    if( strcmp( stat, "av" ) == 0 ) {
+        av = 1;
+    }
+
+    json_array_foreach( tmp, index, value ) {
+        const char *val = json_string_value( value );
+        if( av ) { /* Service newly available */
+            /* TODO: Confirm that service matches remote's, own rights */
+            rvi_service_t *service = rvi_service_create( 
+                                         val, remote->fd, NULL, NULL 
+                                                       );
+            btree_insert( ctx->service_name_idx, service );
+            btree_insert( ctx->service_reg_idx, service );
+        } else { /* Service not available, find it and remove it */
+            rvi_remove_service( handle, val );
+        }
+    }
+
+exit:
+    return err;
+}
+
+int rvi_write_sa( rvi_handle handle, rvi_remote_t *remote )
+{
+    if( !handle || !remote )
+        return EINVAL;
+
+
+    int             err     = RVI_OK;
+    rvi_context_t   *ctx    = ( rvi_context_t * )handle;
+    json_t          *svcs   = NULL;
+    json_t          *sa     = NULL;
+
+
+    svcs = json_array();
+    if( ctx->service_name_idx->count ) {
+        btree_iter iter = btree_iter_begin( ctx->service_name_idx );
+        while ( !btree_iter_at_end( iter ) ) {
+            rvi_service_t *stmp = btree_iter_data( iter );
+            if ( 1 ) {
+                /* TODO: Test whether remote can invoke this service */
+                /* TODO: Test whether registrant is local */
+                json_array_append_new( svcs, json_string( stmp->name ) );
+            }
+            btree_iter_next( iter );
+        }
+        btree_iter_cleanup( iter );
+    }
+
+    sa = json_pack( "{s:s, s:s, s:o}", 
+            "cmd", "sa",            /* populate cmd */
+            "stat", "av",           /* populate status */
+            "svcs", svcs              /* fill with array of services */
+            ); 
+    if( !sa ) {
+        err = RVI_ERROR_JSON;
+        goto exit;
+    }
+
+    /* send "sa" reply */
+    char *saString = json_dumps(sa, JSON_COMPACT);
+
+    BIO_puts( remote->sbio, saString );
+
+exit:
+    free(saString);
+    json_decref(sa);
+
+    return err;
+}
+
+int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
+{
+    if( !handle || !msg || !remote )
+        return EINVAL;
+
+    int             err     = 0;
+    rvi_context_t   *ctx    = ( rvi_context_t * )handle;
+    json_t          *tmp    = NULL;
+    json_t          *params = NULL;
+    rvi_service_t   skey    = {0};
+    rvi_service_t   *stmp   = NULL;
+    time_t          rawtime;
+    const char      *sname;
+
+    tmp = json_object_get( msg, "data" );
+    if( !tmp ) {
+        err = RVI_ERROR_JSON;
+        goto exit;
+    }
+
+    long timeout = json_integer_value( json_object_get( tmp, "timeout" ) );
+    time(&rawtime);
+    if( rawtime > timeout ) { /* Service invocation timed out, discard */
+        goto exit;
+    }
+
+    sname = json_string_value( json_object_get( tmp, "service" ) );
+    skey.name = strdup( sname );
+    /* TODO: Test that remote has right to invoke service */
+    /* and that client has right to receive */
+
+    stmp = btree_search( ctx->service_name_idx, &skey );
+    if( !stmp ) {
+        printf("No service: %s\n", sname );
+        err = -1; /* TODO: More informative error */
+        goto exit;
+    }
+
+    params = json_object_get( tmp, "parameters" );
+    if( !params ) {
+        err = RVI_ERROR_JSON;
+        goto exit;
+    }
+
+    stmp->callback( remote->fd, stmp->data, params );
+
+exit:
+    if( skey.name ) free( skey.name );
     return err;
 }

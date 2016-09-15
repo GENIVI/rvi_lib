@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
 void callbackFunc(int fd, void *service_data, json_t *parameters)
 {
-    printf("inside the callback function\n");
+    printf("inside the callback function, invoked by fd %d\n", fd);
 }
 
 void waitFor(unsigned int secs) 
@@ -295,6 +295,11 @@ void smpl_process(void)
     int len;
     printf("How many connections? ");
     scanf("%d*[^\n]", &len);
+    
+    if( len <= 0 ) {
+        printf("Sorry, %d is not a valid number of connections.\n", len);
+        return;
+    }
 
     int *connections = malloc( len * sizeof(int *) );
 
@@ -304,6 +309,8 @@ void smpl_process(void)
     }
 
     int stat = rvi_process_input(myHandle, connections, len);
+
+    free( connections );
     printf("stat after process input is %d\n", stat);
 }
 
