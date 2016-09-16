@@ -35,9 +35,8 @@
 #include <jwt.h>
 
 #include "rvi.h"
+#include "rvi_list.h"
 #include "btree.h"
-
-#define BUFLEN 4096
 
 /* *************** */
 /* DATA STRUCTURES */
@@ -64,18 +63,19 @@ typedef struct rvi_context_t {
     char *id;       /* Unique device ID. Format is "domain/type/uuid", e.g.: */
                     /* genivi.org/node/839fc839-5fab-472f-87b3-a8fbbd7e3935 */
 
-    /* Array of RVI credentials loaded into memory for quick access when 
+    /* List of RVI credentials loaded into memory for quick access when
      * negotiating connections */
-    char **cred;
+    rvi_list *creds;
 
     /* SSL context for spawning new sessions.  */
     /* Contains X509 certs, config settings, etc */
     SSL_CTX *ssl_ctx;
 
+    rvi_list *rights;
     /* own right_to_receive */
-    json_t *right_to_receive;
+//    json_t *right_to_receive;
     /* own right_to_invoke */
-    json_t *right_to_invoke;
+//    json_t *right_to_invoke;
 } rvi_context_t, *rvi_context_p;
 
 /** @brief Data for connection to remote node */
@@ -88,7 +88,7 @@ typedef struct rvi_remote_t {
     json_t *right_to_invoke;
     /** List of rvi_rights_t structures, containing receive & invoke rights and
      * expiration */
-//    rvi_rights_t *rightsHead;
+    rvi_list *rights;
     /** Pointer to data buffer for partial I/O operations */
     void *buf;
     /** Pointer to BIO chain from OpenSSL library */
@@ -115,7 +115,7 @@ typedef struct rvi_service_t {
 typedef struct rvi_rights_t {
     json_t *receive;    /* json array for right(s) to receive */
     json_t *invoke;     /* json array for right(s) to invoke */
-    int expiration;     /* unix epoch time for jwt's validity.end */
+    long expiration;     /* unix epoch time for jwt's validity.end */
 } rvi_rights_t, *rvi_rights_p;
 
 /* 
@@ -134,9 +134,13 @@ void rvi_remote_destroy ( rvi_remote_t *remote );
 
 rvi_rights_t *rvi_rights_create (   const char *right_to_receive, 
                                     const char *right_to_invoke, 
-                                    const char *validity );
+                                    long validity );
 
 void rvi_rights_destroy ( rvi_rights_t *rights );
+
+void rvi_rights_ldestroy ( rvi_list *list );
+
+void rvi_creds_ldestroy ( rvi_list *list );
 
 /* Comparison functions for constructing btrees and retrieving values */
 int compare_fd ( void *a, void *b );
@@ -159,7 +163,7 @@ char *get_pubkey_file( char *filename );
 int validate_credential( rvi_handle handle, const char *cred, X509 *cert );
 
 int get_credential_rights( rvi_handle handle, const char *cred, 
-                           json_t **rec_arr, json_t **inv_arr );
+                           rvi_list *rights );
 
 int rvi_remove_service(rvi_handle handle, const char *service_name);
 
@@ -307,6 +311,8 @@ rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd )
     /* Note that we do NOT need to populate right_to_receive or 
      * right_to_invoke at this time. Those will be populated by parsing the au 
      * message. */
+    remote->rights = malloc( sizeof( rvi_list ) );
+    rvi_list_initialize( remote->rights );
 
     return remote;
 }
@@ -322,12 +328,72 @@ void rvi_remote_destroy ( rvi_remote_t *remote)
         return;
     }
 
+    rvi_rights_ldestroy( remote->rights );
+
     BIO_free_all ( remote->sbio );
-    json_decref ( remote->right_to_receive );
-    json_decref ( remote->right_to_invoke );
+
     free ( remote->buf );
     free ( remote );
 }
+
+/* This function creates a new rights struct for the given rights and
+ * expiration */
+rvi_rights_t *rvi_rights_create (   const char *right_to_receive, 
+                                    const char *right_to_invoke, 
+                                    long validity )
+{
+    if( !right_to_receive || !right_to_invoke || validity < 1 )
+        return NULL;
+
+    rvi_rights_t *new = NULL;
+    new = malloc( sizeof( rvi_rights_t ) );
+    new->receive = json_loads( right_to_receive, 0, NULL);
+    new->invoke = json_loads( right_to_invoke, 0, NULL);
+    new->expiration = validity;
+
+    return new;
+}
+
+/* This function destroys a rights struct and frees all allocated memory */
+void rvi_rights_destroy ( rvi_rights_t *rights ) 
+{
+    json_decref( rights->receive );
+    json_decref( rights->invoke );
+    free( rights );
+}
+
+/* This function destroys a list containing rights structures and frees all
+ * allocated memory */
+void rvi_rights_ldestroy ( rvi_list *list )
+{
+    rvi_list_entry *ptr = list->listHead;
+    rvi_list_entry *tmp;
+    rvi_rights_t *rights = NULL;
+    while( ptr ) {
+        tmp = ptr;
+        rights = (rvi_rights_t *)ptr->pointer;
+        rvi_rights_destroy( rights );
+        ptr = ptr->next;
+        free( tmp );
+    }
+    free( list );
+}
+
+void rvi_creds_ldestroy ( rvi_list *list )
+{
+    rvi_list_entry *ptr = list->listHead;
+    rvi_list_entry *tmp;
+    while( ptr ) {
+        tmp = ptr;
+        free( ptr->pointer );
+        ptr = ptr->next;
+        free( tmp );
+    }
+    free( list );
+}
+
+/* *************************** */
+/* INITIALIZATION AND TEARDOWN */
 
 /* *************************** */
 /* INITIALIZATION AND TEARDOWN */
@@ -498,6 +564,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
 
     BIO_free_all( certbio );
 
+
     int i = 0;
     while ( ( dir = readdir( d ) ) ) {
         if ( strstr( dir->d_name, ".jwt" ) ) {
@@ -521,9 +588,8 @@ int read_json_config ( rvi_handle handle, const char * filename )
                 cred[len++] = '\0'; /* Ensure string is null-terminated */
             }
             if( validate_credential( handle, cred, cert ) == RVI_OK ) {
-                ctx->cred[i] = strdup( cred );
+                rvi_list_insert( ctx->creds, cred );
             }
-            free(cred);
             fclose( fp );
             i++;
         }
@@ -537,9 +603,9 @@ int read_json_config ( rvi_handle handle, const char * filename )
 
 /** Get arrays of right_to_receive and right_to_invoke */
 int get_credential_rights( rvi_handle handle, const char *cred, 
-                           json_t **rec_arr, json_t **inv_arr )
+                           rvi_list *rights )
 {
-    if( !handle || !cred || /* !rights */ !rec_arr || !inv_arr )
+    if( !handle || !cred ||  !rights /*!rec_arr || !inv_arr */ )
         return EINVAL;
 
     rvi_context_p   ctx = (rvi_context_p)handle;
@@ -583,18 +649,14 @@ int get_credential_rights( rvi_handle handle, const char *cred,
 
     /* Load the rights to receive */
     char *rcv = (char *)jwt_get_grant( jwt, "right_to_receive" );
-
-//    rights->receive = json_loads( rcv, 0, &jsonerr );
-    *rec_arr = json_loads( rcv, 0, &jsonerr );
- 
-    free( rcv );
-
     /* Load the right to invoke */
     char *inv = (char *)jwt_get_grant( jwt, "right_to_invoke" );
 
-    *inv_arr = json_loads( inv, 0, &jsonerr );
+    rvi_rights_t *new = rvi_rights_create( rcv, inv, stop );
 
-//    rights->invoke = json_loads( inv, 0, &jsonerr );
+    rvi_list_insert( rights, new );
+ 
+    free( rcv );
 
     free( inv );
 
@@ -806,28 +868,27 @@ rvi_handle rvi_init ( char *config_filename )
 
     /* Allocate a block of memory for storing credentials, then initialize each 
      * pointer to null */
-    ctx->cred = malloc ( 20 * sizeof ( char * ));
-    int i;
-    for ( i = 0; i < 20; i ++) {
-        ctx->cred[i] = NULL;
-    }
+    ctx->creds = malloc( sizeof( rvi_list ) );
+    rvi_list_initialize( ctx->creds );
 
     /* parse config file */
     /* need: device cert; root cert; device key; credential */
+
+    ctx->rights = malloc( sizeof( rvi_list ) );
+    rvi_list_initialize( ctx->rights );
     
     if ( read_json_config ( ctx, config_filename ) != 0 ) {
         fprintf(stderr, "Error reading config file\n");
         goto err;
     }
 
-    i = 0;
-    while( ctx->cred[i] != NULL ) {
-        int ret = get_credential_rights( ctx, ctx->cred[i], 
-                &ctx->right_to_receive, &ctx->right_to_invoke
-                );
+    rvi_list_entry *ptr = ctx->creds->listHead;
+    while( ptr ) {
+        int ret = get_credential_rights( ctx, (char *)ptr->pointer, 
+                                         ctx->rights );
         if( ret != RVI_OK )
             goto err;
-        i++;
+        ptr = ptr->next;
     }
 
     /* Create generic SSL context configured for client access */
@@ -949,14 +1010,7 @@ int rvi_cleanup(rvi_handle handle)
     }
 
     /* Free all credentials and other entities set when parsing config */
-    if(ctx->cred) {
-        int i = 0;
-        while ( ctx->cred[i] != NULL ) {
-            free ( ctx->cred[i] );
-            i++;
-        }
-        free ( ctx->cred );
-    }
+    rvi_creds_ldestroy( ctx->creds );
 
     if( ctx->certfile )
         free ( ctx->certfile );
@@ -971,10 +1025,15 @@ int rvi_cleanup(rvi_handle handle)
     if( ctx->id )
         free ( ctx->id );
 
-    if( ctx->right_to_receive )
-        json_decref ( ctx->right_to_receive );
-    if( ctx->right_to_invoke )
-        json_decref ( ctx->right_to_invoke );
+    rvi_rights_ldestroy( ctx->rights );
+    /* TODO: Free the memory used by the list
+    if( ctx->rights->receive )
+        json_decref ( ctx->rights->receive );
+    if( ctx->rights->invoke )
+        json_decref ( ctx->rights->invoke );
+    if( ctx->rights )
+        free( ctx->rights );
+    */
 
     /* Free the memory allocated to the rvi_context_t struct */
     free(ctx);
@@ -1544,11 +1603,7 @@ int rvi_read_au( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
         if(  validate_credential( handle, val, cert ) != RVI_OK ) {
             continue;
         }
-        err = get_credential_rights( 
-                                    handle, val, 
-                                    &remote->right_to_receive, 
-                                    &remote->right_to_invoke 
-                                   );
+        err = get_credential_rights( handle, val, remote->rights );
         if( err ) goto exit;
     }
 
@@ -1569,12 +1624,10 @@ int rvi_write_au( rvi_handle handle, rvi_remote_t *remote )
 
 
     creds = json_array();
-    if( ctx->cred ) {
-        int i = 0;
-        while ( ctx->cred[i] != NULL ) {
-            json_array_append_new( creds, json_string( ctx->cred[i] ) );
-            i++;
-        }
+    rvi_list_entry *ptr = ctx->creds->listHead;
+    while( ptr ) {
+        json_array_append_new( creds, json_string( (char *)ptr->pointer ) );
+        ptr = ptr->next;
     }
 
     au = json_pack( "{s:s, s:s, s:o}", 
