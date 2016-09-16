@@ -52,7 +52,7 @@ typedef struct rvi_context_t {
     btree_t *remote_idx;        /* Remote connections by fd */
     btree_t *service_name_idx;  /* Services by fully qualified service name */
     btree_t *service_reg_idx;   /* Services by fd of registering node ---*/
-                                /*  note: local services registered by stdin */
+                            /*  note: local services designated 0 (stdin)  */
 
     /* Properties set in configuration file */
     char *cadir;    /* Directory containing the trusted certificate store */
@@ -72,10 +72,6 @@ typedef struct rvi_context_t {
     SSL_CTX *ssl_ctx;
 
     rvi_list *rights;
-    /* own right_to_receive */
-//    json_t *right_to_receive;
-    /* own right_to_invoke */
-//    json_t *right_to_invoke;
 } rvi_context_t, *rvi_context_p;
 
 /** @brief Data for connection to remote node */
@@ -124,7 +120,7 @@ typedef struct rvi_rights_t {
 
 rvi_service_t *rvi_service_create ( const char *name, const int registrant, 
                                     const rvi_callback_t callback, 
-                                    const void *service_data );
+                                    const void *service_data, size_t n );
 
 void rvi_service_destroy ( rvi_service_t *service );
 
@@ -142,12 +138,16 @@ void rvi_rights_ldestroy ( rvi_list *list );
 
 void rvi_creds_ldestroy ( rvi_list *list );
 
+char *rvi_fqsn_get( rvi_handle handle, const char *service_name );
+
 /* Comparison functions for constructing btrees and retrieving values */
 int compare_fd ( void *a, void *b );
 
 int compare_registrant ( void *a, void *b );
 
 int compare_name ( void *a, void *b );
+
+int compare_pattern ( const char *pattern, const char *fqsn );
 
 /* Utility functions related to OpenSSL library */
 int ssl_verify_callback ( int ok, X509_STORE_CTX *store );
@@ -164,6 +164,10 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert );
 
 int get_credential_rights( rvi_handle handle, const char *cred, 
                            rvi_list *rights );
+
+int rvi_rrcv_err( rvi_list *rlist, const char *service_name );
+
+int rvi_rinv_err( rvi_list *rlist, const char *service_name );
 
 int rvi_remove_service(rvi_handle handle, const char *service_name);
 
@@ -224,6 +228,37 @@ int compare_name ( void *a, void *b )
     return strcmp ( service_a->name, service_b->name );
 }
 
+/*
+ * This function compares an RVI pattern to a fully-qualified service name. If
+ * the service name matches the pattern, it returns RVI_OK or an error
+ * otherwise.
+ */
+int compare_pattern ( const char *pattern, const char *fqsn )
+{
+    /* Check input */
+    if( !pattern || !fqsn )
+        return EINVAL;
+    /* While there are bytes to compare */
+    while( *pattern != '\0' && *fqsn != '\0' ) {
+        /* If there's a topic wildcard... */
+        if( *pattern == '+' ) {
+            /* Advance topic in pattern */
+            while( *pattern++ != '/' && *pattern != '\0' );
+            /* Advance topic in fqsn */
+            while( *fqsn++ != '/' && *fqsn != '\0' );
+        }
+        /* If the bytes don't match, return error */
+        if( *pattern++ != *fqsn++ )
+            return -1;
+    }
+    /* If the pattern still has characters, the fqsn doesn't match */
+    if( *pattern != '\0' )
+        return -1;
+
+    /* Otherwise, the fqsn matches the pattern */
+    return RVI_OK;
+}
+
 /* 
  * This function initializes a new service struct and sets the name,
  * registrant, and callback to the specified values. 
@@ -234,7 +269,7 @@ int compare_name ( void *a, void *b )
 
 rvi_service_t *rvi_service_create ( const char *name, const int registrant, 
                                     const rvi_callback_t callback, 
-                                    const void *service_data )
+                                    const void *service_data, size_t n )
 {
     /* If name is NULL or registrant is negative, there's an error */
     if ( !name || (registrant < 0) )
@@ -254,11 +289,10 @@ rvi_service_t *rvi_service_create ( const char *name, const int registrant,
     service->callback = callback;
 
     /* Set the data to pass to the callback. NULL is valid */
-    service->data = service_data;
-
-    /* TODO: Walk the tree of remotes to check for matches in may_register and
-     * may_invoke to add to array 
-     */
+    if( n ) {
+        service->data = malloc( n );
+        memcpy( service->data, service_data, n );
+    }
 
     /* Return the address of the new service */
     return service;
@@ -392,8 +426,30 @@ void rvi_creds_ldestroy ( rvi_list *list )
     free( list );
 }
 
-/* *************************** */
-/* INITIALIZATION AND TEARDOWN */
+/* This returns a new buffer with the fully-qualified service name using this
+ * node's own ID. The memory must be freed by the calling function. Returns
+ * NULL on failure. */
+char *rvi_fqsn_get( rvi_handle handle, const char *service_name )
+{
+    if( !handle || !service_name )
+        return NULL;
+
+    rvi_context_t   *ctx    = (rvi_context_t *)handle;
+    char            *fqsn   = NULL;
+
+    size_t idlen = strlen( ctx->id );
+    if( strncmp( service_name, ctx->id, idlen ) != 0 ) {
+        size_t namelen = strlen( service_name );
+        fqsn = malloc( namelen + idlen + 2 );
+        if( !fqsn )
+            return NULL;
+        sprintf( fqsn, "%s/%s", ctx->id, service_name );
+    } else {
+        fqsn = strdup( service_name );
+    }
+
+    return fqsn;
+}
 
 /* *************************** */
 /* INITIALIZATION AND TEARDOWN */
@@ -610,7 +666,6 @@ int get_credential_rights( rvi_handle handle, const char *cred,
 
     rvi_context_p   ctx = (rvi_context_p)handle;
     jwt_t           *jwt;
-    json_error_t    jsonerr;
     char            *key;
     int             ret;
     time_t          rawtime;
@@ -644,9 +699,6 @@ int get_credential_rights( rvi_handle handle, const char *cred,
         goto exit;
     }
     
-    //rights->expiration = stop;
-
-
     /* Load the rights to receive */
     char *rcv = (char *)jwt_get_grant( jwt, "right_to_receive" );
     /* Load the right to invoke */
@@ -670,6 +722,55 @@ exit:
     if ( validity_str ) free( validity_str );
 
     return ret;
+}
+
+int rvi_rrcv_err( rvi_list *rlist, const char *service_name )
+{
+    if( !rlist || !service_name )
+        return EINVAL;
+
+    int     err     = -1; /* By default, assume no rights */
+    json_t  *value  = NULL;
+    size_t  index;
+
+    rvi_list_entry *ptr = rlist->listHead;
+    while( ptr ) {
+        rvi_rights_t *tmp = (rvi_rights_t *)ptr->pointer;
+        json_array_foreach( tmp->receive, index, value ) {
+            const char *pattern = json_string_value( value );
+            if( ( err = compare_pattern( pattern, service_name ) ) == RVI_OK )
+                goto exit; /* We found a match, exit immediately */
+        }
+        ptr = ptr->next;
+    }
+
+exit:
+    return err;
+}
+
+int rvi_rinv_err( rvi_list *rlist, const char *service_name )
+{
+    if( !rlist || !service_name )
+        return EINVAL;
+
+    int     err     = -1; /* By default, assume no rights */
+    json_t  *value  = NULL;
+    size_t  index;
+
+    rvi_list_entry *ptr = rlist->listHead;
+    while( ptr ) {
+        rvi_rights_t *tmp = (rvi_rights_t *)ptr->pointer;
+        json_array_foreach( tmp->invoke, index, value ) {
+            const char *pattern = json_string_value( value );
+            if( ( err = compare_pattern( pattern, service_name ) ) == RVI_OK )
+                goto exit; /* We found a match, exit immediately */
+        }
+        ptr = ptr->next;
+    }
+
+exit:
+    return err;
+
 }
 
 /** Get the public key from a certificate file */
@@ -1026,14 +1127,6 @@ int rvi_cleanup(rvi_handle handle)
         free ( ctx->id );
 
     rvi_rights_ldestroy( ctx->rights );
-    /* TODO: Free the memory used by the list
-    if( ctx->rights->receive )
-        json_decref ( ctx->rights->receive );
-    if( ctx->rights->invoke )
-        json_decref ( ctx->rights->invoke );
-    if( ctx->rights )
-        free( ctx->rights );
-    */
 
     /* Free the memory allocated to the rvi_context_t struct */
     free(ctx);
@@ -1280,25 +1373,33 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
  *         Error code on failure.
  */
 int rvi_register_service( rvi_handle handle, const char *service_name, 
-                          rvi_callback_t callback, void *service_data )
+                          rvi_callback_t callback, 
+                          void *service_data, size_t n )
 {
     if( !handle || !service_name )
         return EINVAL;
 
-    rvi_context_t *ctx      =   (rvi_context_t *)handle;
-    rvi_service_t *service  = NULL;
+    int             err         = 0;
+    rvi_context_t   *ctx        =   (rvi_context_t *)handle;
+    rvi_service_t   *service    = NULL;
+    char            *fqsn       = NULL;
 
-    /* TODO: Get fully qualified service name */
+    fqsn = rvi_fqsn_get( handle, service_name );
+    if( !fqsn )
+        return ENOMEM;
+    
+    if( (err = rvi_rrcv_err( ctx->rights, fqsn ) ) ) {
+        goto exit;
+    }
 
-    /* TODO: Compare service name to handle->right_to_receive */
-    /* If no match, return error */
 
     /* Create a new rvi_service_t structure */
     /* Set service->name to service_name */
     /* Set service->callback to callback */
     /* Set service->registrant to stdin */
-    service = rvi_service_create( service_name, 0, callback, service_data );
+    service = rvi_service_create( fqsn, 0, callback, service_data, n );
 
+    /* TODO: */
     /* Add stdin to service->may_receive */
     /* Search remotes by right_to_invoke; add to service->may_invoke */
     /* Search remotes by right_to_receive; add to service->may_register */
@@ -1311,7 +1412,10 @@ int rvi_register_service( rvi_handle handle, const char *service_name,
     /* Add service to services_by_registrant */
     btree_insert( ctx->service_reg_idx, service );
 
-    return 0;
+exit:
+    free( fqsn );
+
+    return err;
 }
 
 /** @brief Unregister a previously registered service
@@ -1326,12 +1430,32 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name)
 {
     if( !handle || !service_name )
         return EINVAL;
-    /* if service_name is not in services_by_name, return error */
-    /* if service->registrant is not stdin, return error */
-    /* if service->may_invoke is not empty, prepare sa message */
+
+    int             err     = RVI_OK;
+    rvi_context_t   *ctx    = ( rvi_context_t * )handle;
+    rvi_service_t   skey    = {0};
+    
+    skey.name = rvi_fqsn_get( handle, service_name );
+    rvi_service_t *stmp = btree_search( ctx->service_name_idx, &skey );
+    
+    if( !stmp ) {
+        err = -1;
+        goto exit;
+    }
+
+    if( stmp->registrant != 0 ) {
+        return -1;
+        goto exit;
+    }
+    /* TODO: if service->may_invoke is not empty, prepare sa message */
     /*      for each fd in service->may_invoke */
     /*      send sa message making service_name stat un */
-    return rvi_remove_service(handle, service_name);
+    err = rvi_remove_service( handle, skey.name );
+
+exit:
+    free( skey.name );
+
+    return err;
 }
 
 int rvi_remove_service(rvi_handle handle, const char *service_name)
@@ -1678,13 +1802,23 @@ int rvi_read_sa( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
     json_array_foreach( tmp, index, value ) {
         const char *val = json_string_value( value );
         if( av ) { /* Service newly available */
-            /* TODO: Confirm that service matches remote's, own rights */
+            /* If remote doesn't have right to receive, discard */
+            if ( ( err = rvi_rrcv_err( remote->rights, val ) ) ) 
+                continue;
+            /* If we don't have right to invoke, discard */
+            if ( ( err = rvi_rinv_err( ctx->rights, val ) ) )
+                continue;
+            
+            /* Otherwise, add the service to services available */
             rvi_service_t *service = rvi_service_create( 
-                                         val, remote->fd, NULL, NULL 
+                                         val, remote->fd, NULL, NULL, 0
                                                        );
             btree_insert( ctx->service_name_idx, service );
             btree_insert( ctx->service_reg_idx, service );
         } else { /* Service not available, find it and remove it */
+            /* If remote doesn't have right to receive, ignore this message */
+            if ( ( err = rvi_rrcv_err( remote->rights, val ) ) ) 
+                continue;
             rvi_remove_service( handle, val );
         }
     }
@@ -1710,9 +1844,11 @@ int rvi_write_sa( rvi_handle handle, rvi_remote_t *remote )
         btree_iter iter = btree_iter_begin( ctx->service_name_idx );
         while ( !btree_iter_at_end( iter ) ) {
             rvi_service_t *stmp = btree_iter_data( iter );
-            if ( 1 ) {
-                /* TODO: Test whether remote can invoke this service */
-                /* TODO: Test whether registrant is local */
+            if ( /* The remote is allowed to invoke it */
+                 !( err = rvi_rinv_err( remote->rights, stmp->name ) ) &&
+                 /* The service was registered locally */
+                 stmp->registrant == 0
+               ) {
                 json_array_append_new( svcs, json_string( stmp->name ) );
             }
             btree_iter_next( iter );
@@ -1769,10 +1905,12 @@ int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
     }
 
     sname = json_string_value( json_object_get( tmp, "service" ) );
-    skey.name = strdup( sname );
-    /* TODO: Test that remote has right to invoke service */
-    /* and that client has right to receive */
+    if( ( err = rvi_rinv_err( remote->rights, sname ) ) )
+        goto exit; /* Remote does not have right to invoke */
+    if( ( err = rvi_rrcv_err( ctx->rights, sname ) ) )
+        goto exit; /* This node does not have the right to receive */
 
+    skey.name = strdup( sname );
     stmp = btree_search( ctx->service_name_idx, &skey );
     if( !stmp ) {
         printf("No service: %s\n", sname );

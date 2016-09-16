@@ -138,18 +138,20 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size);
 
 /** @brief Register a service with a callback function
  *
- * @param handle - The handle to the RVI context.
- * @param service_name - The fully-qualified service name to register
- * @param callback - The callback function to be executed upon service
- *                   invocation.
- * @param service_data - Parameters to be passed to the callback function (in
- *                       addition to any JSON parameters from the remote node)
+ * @param handle        - The handle to the RVI context.
+ * @param service_name  - The fully-qualified service name to register
+ * @param callback      - The callback function to be executed upon service
+ *                        invocation.
+ * @param service_data  - Parameters to be passed to the callback function (in
+ *                        addition to any JSON parameters from the remote node)
+ * @param n             - Size of service_data
  *
  * @return 0 (RVI_OK) on success 
  *         Error code on failure.
  */
-int rvi_register_service(rvi_handle handle, const char *service_name, 
-                         rvi_callback_t callback, void* service_data);
+int rvi_register_service( rvi_handle handle, const char *service_name, 
+                          rvi_callback_t callback, 
+                          void* service_data, size_t n );
 
 /** @brief Unregister a previously registered service
  *
