@@ -1392,17 +1392,21 @@ int rvi_register_service( rvi_handle handle, const char *service_name,
         goto exit;
     }
 
-
     /* Create a new rvi_service_t structure */
-    /* Set service->name to service_name */
-    /* Set service->callback to callback */
-    /* Set service->registrant to stdin */
     service = rvi_service_create( fqsn, 0, callback, service_data, n );
 
+    if( ctx->remote_idx->count ) {
+        btree_iter iter = btree_iter_begin( ctx->remote_idx );
+        while( !btree_iter_at_end( iter  ) ) {
+            /* TODO: */
+            /* if remote can invoke, add to service->may_invoke */
+            /* if remote can receive, add to service->may_receive */
+            btree_iter_next( iter );
+        }
+        btree_iter_cleanup( iter );
+    }
+
     /* TODO: */
-    /* Add stdin to service->may_receive */
-    /* Search remotes by right_to_invoke; add to service->may_invoke */
-    /* Search remotes by right_to_receive; add to service->may_register */
     /* If service->may_invoke is non-empty, prepare sa message */
     /*      For each fd in service->may_invoke, */
     /*      send sa message making service stat av */
