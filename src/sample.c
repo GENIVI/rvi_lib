@@ -143,7 +143,10 @@ void smpl_initialize(void)
     printf("Config file: ");
     scanf("%s", input);
     myHandle = rvi_init(input);
-    if( !myHandle ) exit(1);
+    if( !myHandle ) {
+        printf("Failed to initialize RVI.\n");
+        return;
+    }
     printf("RVI initialized!\n");
 }
 
@@ -176,7 +179,6 @@ void smpl_connect(void)
     } else {
         printf("Failed to connect to remote node.\n");
     }
-    printf("stat after connect is %d\n", stat);
 }
 
 void smpl_disconnect(void)
@@ -188,7 +190,11 @@ void smpl_disconnect(void)
     int fd;
     scanf("%d", &fd);
     int stat = rvi_disconnect(myHandle, fd);
-    printf("stat after disconnecting file descriptor %d is %d\n", fd, stat);
+    if( stat ) {
+        printf("Error disconnecting from %d\n", fd);
+    } else {
+        printf("Disconnected from %d!\n", fd);
+    }
 }
 
 void get_connections(void)
@@ -207,7 +213,12 @@ void get_connections(void)
 
     int stat = rvi_get_connections(myHandle, connections, &len);
 
-    printf("stat after get connections is %d\n", stat);
+    if( stat ) { 
+        printf("Didn't get any connections.\n");
+        free(connections);
+        return;
+    }
+
     while(*connections != 0) {
         printf("\tconnection on fd %d\n", *connections++);
     }
@@ -224,7 +235,11 @@ void register_service(void)
     printf("What service would you like to register? ");
     scanf("%s", service);
     int stat = rvi_register_service(myHandle, service, callbackFunc, NULL, 0);
-    printf("stat after register service is %d\n", stat);
+    if( stat ) {
+        printf("Couldn't register the service %s\n", service);
+    } else {
+        printf("Registered %s!\n", service);
+    }
 }
 
 void unregister_service(void)
@@ -237,7 +252,11 @@ void unregister_service(void)
     printf("What service would you like to unregister? ");
     scanf("%s", service);
     int stat = rvi_unregister_service(myHandle, service);
-    printf("stat after unregister service is %d\n", stat);
+    if( stat ) {
+        printf("Couldn't unregister the service %s\n", service);
+    } else {
+        printf("Unregistered %s!\n", service);
+    }
 }
 
 void get_services(void)
@@ -254,7 +273,11 @@ void get_services(void)
     }
 
     int stat = rvi_get_services(myHandle, services, &len);
-    printf("stat after get services is %d\n", stat);
+    if( stat ) {
+        printf("Couldn't get any services.\n");
+        free(services);
+        return;
+    }
     for(int i = 0; i < len; i++) {
         printf("\t\%s\n", services[i]);
     }
@@ -283,7 +306,11 @@ void smpl_invoke(void)
     scanf("%s", params);
     parameters = json_loads(params, 0, NULL);
     int stat = rvi_invoke_remote_service(myHandle, input, parameters);
-    printf("stat after invoking remote service %s is %d\n", input, stat);
+    if( stat ) {
+        printf("Couldn't invoke %s...\n", input);
+    } else {
+        printf("Invoked %s!\n", input);
+    }
 }
 
 void smpl_process(void)
@@ -311,7 +338,11 @@ void smpl_process(void)
     int stat = rvi_process_input(myHandle, connections, len);
 
     free( connections );
-    printf("stat after process input is %d\n", stat);
+    if( stat ) {
+        printf("Couldn't process input on one or more connections...\n");
+    } else {
+        printf("All input processed!\n");
+    }
 }
 
 void smpl_shutdown(void)
@@ -323,6 +354,9 @@ void smpl_shutdown(void)
     int stat = rvi_cleanup(myHandle);
     if(stat == RVI_OK) {
         myHandle = NULL; 
+        printf("Closed down RVI context!\n");
+    } else {
+        printf("Uh oh... an error occurred when shutting down RVI.\n");
     }
-    printf("stat after cleanup is %d\n", stat);
+    
 }

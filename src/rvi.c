@@ -78,10 +78,6 @@ typedef struct rvi_context_t {
 typedef struct rvi_remote_t {
     /** File descriptor for the connection */
     int fd;
-    /* own right_to_receive */
-    json_t *right_to_receive;
-    /* own right_to_invoke */
-    json_t *right_to_invoke;
     /** List of rvi_rights_t structures, containing receive & invoke rights and
      * expiration */
     rvi_list *rights;
@@ -95,10 +91,6 @@ typedef struct rvi_remote_t {
 typedef struct rvi_service_t {
     /** The fully-qualified service name */
     char *name;
-    /** Array of file descriptors for remote nodes that may register service */
-    int *may_register;
-    /** Array of file descriptors for remote nodes that may invoke service */
-    int *may_invoke;
     /** File descriptor of remote node that registered service */
     int registrant;
     /** Callback function to execute upon service invocation */
@@ -127,6 +119,8 @@ void rvi_service_destroy ( rvi_service_t *service );
 rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd );
 
 void rvi_remote_destroy ( rvi_remote_t *remote );
+
+void rvi_remote_ldestroy ( rvi_list *list );
 
 rvi_rights_t *rvi_rights_create (   const char *right_to_receive, 
                                     const char *right_to_invoke, 
@@ -177,7 +171,9 @@ int rvi_write_au( rvi_handle handle, rvi_remote_t *remote );
 
 int rvi_read_sa( rvi_handle handle, json_t *msg, rvi_remote_t *remote );
 
-int rvi_write_sa( rvi_handle handle, rvi_remote_t *remote );
+int rvi_all_service_announce( rvi_handle handle, rvi_remote_t *remote );
+
+int rvi_service_announce( rvi_handle handle, rvi_service_t *service, int available );
 
 int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote );
 
@@ -309,11 +305,9 @@ void rvi_service_destroy ( rvi_service_t *service )
          return;
      }
 
+     if( service->data )
+         free ( service->data );
      free ( service->name );
-     if( service->may_register )
-         free ( service->may_register );
-     if( service->may_invoke )
-         free ( service->may_invoke );
      free ( service );
 }
 
@@ -368,6 +362,21 @@ void rvi_remote_destroy ( rvi_remote_t *remote)
 
     free ( remote->buf );
     free ( remote );
+}
+
+void rvi_remote_ldestroy ( rvi_list *list )
+{
+    rvi_list_entry *ptr = list->listHead;
+    rvi_list_entry *tmp;
+    rvi_remote_t *remote = NULL;
+    while( ptr ) {
+        tmp = ptr;
+        remote = (rvi_remote_t *)ptr->pointer;
+        rvi_remote_destroy( remote );
+        ptr = ptr->next;
+        free( tmp );
+    }
+    free( list );
 }
 
 /* This function creates a new rights struct for the given rights and
@@ -1165,20 +1174,19 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
         return -EINVAL;
     }
 
-    BIO*            sbio;
-    SSL*            ssl;
-    rvi_remote_t*   remote;
-    rvi_context_t*  rvi;
+    BIO             *sbio   = NULL;
+    SSL             *ssl    = NULL;
+    rvi_remote_t    *remote = NULL;
+    rvi_context_t   *ctx    = (rvi_context_t *)handle;
     int ret;
 
     ret = RVI_OK;
-    rvi = (rvi_context_t *)handle;
 
     /* 
      * Spawn new SSL session from handle->ctx. BIO_new_ssl_connect spawns a new
      * chain including a SSL BIO (using ctx) and a connect BIO
      */
-    sbio = BIO_new_ssl_connect(rvi->ssl_ctx);
+    sbio = BIO_new_ssl_connect(ctx->ssl_ctx);
     if(!sbio) {
         ret = -RVI_ERROR_OPENSSL;
         goto err;
@@ -1190,8 +1198,8 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     }
 
     /* 
-     * When performing I/O, automatically retry all reads and complete 
-     * negotiations before returning. Note that all BIOs have their I/O flag 
+     * When performing I/O, automatically retry all reads and complete
+     * negotiations before returning. Note that all BIOs have their I/O flag
      * set to blocking by default. 
      */
     SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
@@ -1203,13 +1211,14 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     BIO_set_conn_port(sbio, port);
 
     /* check if we're already connected to that host... */
-    if( rvi->remote_idx->count ) {
-        btree_iter iter = btree_iter_begin( rvi->remote_idx );
+    if( ctx->remote_idx->count ) {
+        btree_iter iter = btree_iter_begin( ctx->remote_idx );
         while( !btree_iter_at_end( iter ) ) {
             rvi_remote_t *rtmp = btree_iter_data( iter );
-            if( strcmp( BIO_get_conn_hostname ( sbio ), 
-                        BIO_get_conn_hostname( rtmp->sbio )
-                      ) == 0 ) { /* We already have a connection to that host */
+            if( 0 == strcmp( BIO_get_conn_hostname ( sbio ), 
+                             BIO_get_conn_hostname( rtmp->sbio )
+                           )  
+              ) { /* We already have a connection to that host */
                 ret = -1;
                 break;
             }
@@ -1232,7 +1241,7 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     remote = rvi_remote_create ( sbio, SSL_get_fd ( ssl ) );
 
     /* Add this data structure to our lookup tree */
-    btree_insert(rvi->remote_idx, remote);
+    btree_insert(ctx->remote_idx, remote);
     
     rvi_write_au( handle, remote ); 
     
@@ -1240,17 +1249,10 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     rvi_process_input( handle, &remote->fd, 1 );
 
     /* create JSON array of all services */
-    rvi_write_sa( handle, remote );
+    rvi_all_service_announce( handle, remote );
 
     /* parse incoming "sa" message */
     rvi_process_input( handle, &remote->fd, 1 );
-
-    /*      search connections_by_right_to_receive to match name */
-    /*          for each match, add to new_service->may_register */
-    /*      search connections_by_right_to_invoke to match name */
-    
-    /*      for each match, add to new_service->may_invoke */
-    /* return remote->fd */
 
     return remote->fd;
 
@@ -1395,26 +1397,12 @@ int rvi_register_service( rvi_handle handle, const char *service_name,
     /* Create a new rvi_service_t structure */
     service = rvi_service_create( fqsn, 0, callback, service_data, n );
 
-    if( ctx->remote_idx->count ) {
-        btree_iter iter = btree_iter_begin( ctx->remote_idx );
-        while( !btree_iter_at_end( iter  ) ) {
-            /* TODO: */
-            /* if remote can invoke, add to service->may_invoke */
-            /* if remote can receive, add to service->may_receive */
-            btree_iter_next( iter );
-        }
-        btree_iter_cleanup( iter );
-    }
-
-    /* TODO: */
-    /* If service->may_invoke is non-empty, prepare sa message */
-    /*      For each fd in service->may_invoke, */
-    /*      send sa message making service stat av */
-
     /* Add service to services_by_name */
     btree_insert( ctx->service_name_idx, service );
     /* Add service to services_by_registrant */
     btree_insert( ctx->service_reg_idx, service );
+
+    rvi_service_announce( handle, service, 1 );
 
 exit:
     free( fqsn );
@@ -1451,9 +1439,9 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name)
         return -1;
         goto exit;
     }
-    /* TODO: if service->may_invoke is not empty, prepare sa message */
-    /*      for each fd in service->may_invoke */
-    /*      send sa message making service_name stat un */
+
+    rvi_service_announce( handle, stmp, 0 );
+
     err = rvi_remove_service( handle, skey.name );
 
 exit:
@@ -1600,7 +1588,6 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
     char *rcvString = json_dumps(rcv, JSON_COMPACT);
 
     /* send rcv message to registrant */
-    printf("Send: %s\n", rcvString);
     BIO_puts(rtmp->sbio, rcvString);
 
     free(rcvString);
@@ -1815,7 +1802,8 @@ int rvi_read_sa( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
             
             /* Otherwise, add the service to services available */
             rvi_service_t *service = rvi_service_create( 
-                                         val, remote->fd, NULL, NULL, 0
+                                                 val, remote->fd, 
+                                                 NULL, NULL, 0
                                                        );
             btree_insert( ctx->service_name_idx, service );
             btree_insert( ctx->service_reg_idx, service );
@@ -1831,7 +1819,7 @@ exit:
     return err;
 }
 
-int rvi_write_sa( rvi_handle handle, rvi_remote_t *remote )
+int rvi_all_service_announce( rvi_handle handle, rvi_remote_t *remote )
 {
     if( !handle || !remote )
         return EINVAL;
@@ -1877,6 +1865,60 @@ int rvi_write_sa( rvi_handle handle, rvi_remote_t *remote )
 
 exit:
     free(saString);
+    json_decref(sa);
+
+    return err;
+}
+
+int rvi_service_announce( rvi_handle handle, rvi_service_t *service, int available )
+{
+    if( !handle || !service )
+        return EINVAL;
+
+    int             err     = RVI_OK;
+    rvi_context_t   *ctx    = (rvi_context_t *)handle;
+    json_t          *svcs   = NULL;
+    json_t          *sa     = NULL;
+
+    svcs = json_array();
+    json_array_append_new( svcs, json_string( service->name ) );
+    if( ( err = rvi_rrcv_err( ctx->rights, service->name ) ) ) {
+        err = -1; /* TODO: We do not have right to receive */
+        goto exit;
+    }
+
+    if( service->registrant != 0 ) {
+        err = -1; /* TODO: We didn't register, so we don't announce */
+        goto exit;
+    }
+
+    if( !(ctx->remote_idx->count) ) {
+        err = -1; /* TODO more informative error */
+        goto exit;
+    }
+
+    sa = json_pack( "{s:s, s:s, s:o}",
+            "cmd", "sa",                        /* populate cmd */
+            "stat", (available ? "av" : "un"),  /* populate status */
+            "svcs", svcs                        /* fill with services */
+            );
+
+    char *saString = json_dumps(sa, JSON_COMPACT);
+
+    btree_iter iter = btree_iter_begin( ctx->remote_idx );
+        while( !btree_iter_at_end( iter  ) ) {
+            rvi_remote_t *remote = btree_iter_data( iter );
+            if( ( err = rvi_rinv_err( remote->rights, service->name ) ) ) {
+                continue; /* If the remote can't invoke, don't announce */
+            }
+            BIO_puts( remote->sbio, saString );
+            btree_iter_next( iter );
+        }
+    btree_iter_cleanup( iter );
+
+
+exit:
+    if( saString ) free( saString );
     json_decref(sa);
 
     return err;
