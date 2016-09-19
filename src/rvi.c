@@ -120,8 +120,6 @@ rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd );
 
 void rvi_remote_destroy ( rvi_remote_t *remote );
 
-void rvi_remote_ldestroy ( rvi_list *list );
-
 rvi_rights_t *rvi_rights_create (   const char *right_to_receive, 
                                     const char *right_to_invoke, 
                                     long validity );
@@ -364,21 +362,6 @@ void rvi_remote_destroy ( rvi_remote_t *remote)
     free ( remote );
 }
 
-void rvi_remote_ldestroy ( rvi_list *list )
-{
-    rvi_list_entry *ptr = list->listHead;
-    rvi_list_entry *tmp;
-    rvi_remote_t *remote = NULL;
-    while( ptr ) {
-        tmp = ptr;
-        remote = (rvi_remote_t *)ptr->pointer;
-        rvi_remote_destroy( remote );
-        ptr = ptr->next;
-        free( tmp );
-    }
-    free( list );
-}
-
 /* This function creates a new rights struct for the given rights and
  * expiration */
 rvi_rights_t *rvi_rights_create (   const char *right_to_receive, 
@@ -562,30 +545,27 @@ int read_json_config ( rvi_handle handle, const char * filename )
     if ( !handle || !filename )
         return EINVAL;
 
+    int             err         = RVI_OK;
     json_error_t    errjson;
-    json_t          *conf;
-    json_t          *tmp;
-    DIR             *d;
-    struct dirent   *dir;
-    FILE            *fp;
-    rvi_context_t   *ctx;
-    BIO             *certbio;
-    X509            *cert;
-    char            *cred = NULL;
-
-    ctx = ( rvi_context_t * )handle;
+    json_t          *conf       = NULL;
+    json_t          *tmp        = NULL;
+    DIR             *d          = NULL;
+    struct dirent   *dir        = {0};
+    FILE            *fp         = NULL;
+    rvi_context_t   *ctx        = (rvi_context_t *)handle;
+    BIO             *certbio    = NULL;
+    X509            *cert       = NULL;
+    char            *cred       = NULL;
 
     conf = json_load_file( filename, 0, &errjson );
     if( !conf ) {
-        fprintf(stderr, "error: on line %d: %s\n", errjson.line, errjson.text);
-        return 1;
+        err = RVI_ERR_JSON;
+        goto exit;
     }
 
     tmp = json_object_get( conf, "dev" );
-    if(!tmp) {
-        fprintf(stderr, "could not get device info\n");
-        return 1;
-    }
+    if(!tmp) { err = RVI_ERR_JSON; goto exit; }
+
     ctx->keyfile = strdup( json_string_value( 
                 json_object_get( tmp, "key" ) ) );
     ctx->certfile = strdup( json_string_value( 
@@ -595,52 +575,57 @@ int read_json_config ( rvi_handle handle, const char * filename )
 
 
     tmp = json_object_get ( conf, "ca" );
-    if(!tmp) {
-        fprintf(stderr, "could not get certification authority info\n");
-        return 1;
-    }
+    if(!tmp) { err = RVI_ERR_JSON; goto exit; }
+
     ctx->cadir = strdup( json_string_value( 
                 json_object_get( tmp, "dir" ) ) );
     ctx->cafile = strdup( json_string_value( 
                 json_object_get( tmp, "cert" ) ) );
 
-    ctx->creddir = strdup( json_string_value( 
-                json_object_get ( conf, "creddir" ) ) );
+    const char *creddir = json_string_value(
+                json_object_get ( conf, "creddir" ) );
+    
+    if( creddir[ strlen( creddir ) ] == '/' ) {
+        /* If the final character of the directory is a forward slash */
+        ctx->creddir = strdup( creddir );
+    } else {
+        /* Otherwise, add a trailing slash */
+        ctx->creddir = malloc( strlen( creddir ) + 2 );
+        sprintf( ctx->creddir, "%s/", creddir );
+    }
 
     json_decref(conf);
 
-    if( !(ctx->creddir) ) {
-        return RVI_ERROR_NOCRED;
-    }
+    if( !(ctx->creddir) ) { err = RVI_ERR_NOCRED; goto exit; }
 
     d = opendir( ctx->creddir );
-    if (!d) {
-        return RVI_ERROR_NOCRED;
-    }
+    if (!d) { err = RVI_ERR_NOCRED; goto exit; }
 
     certbio = BIO_new_file( ctx->certfile, "r" );
-    if( !certbio ) {
-        return RVI_ERROR_NOCRED;
-    }
+    if( !certbio ) { err = RVI_ERR_NOCRED; goto exit; }
     cert = PEM_read_bio_X509( certbio, NULL, 0, NULL);
-    if( !cert ) {
-        return RVI_ERROR_NOCRED;
-    }
-
-    BIO_free_all( certbio );
-
+    if( !cert ) { err = RVI_ERR_NOCRED; goto exit; }
 
     int i = 0;
+    char *path = NULL;
+    size_t path_size;
     while ( ( dir = readdir( d ) ) ) {
         if ( strstr( dir->d_name, ".jwt" ) ) {
             /* if it's a jwt file, open it */
-            fp = fopen( dir->d_name, "r" );
-            if( !fp ) return RVI_ERROR_NOCRED;
+            path_size = strlen(ctx->creddir) + strlen(dir->d_name) + 1;
+            path = malloc(path_size);
+            if(!path) {
+                i++;
+                continue;
+            }
+            sprintf(path, "%s%s", ctx->creddir, dir->d_name );
+            fp = fopen( path, "r" );
+            if( !fp ) return RVI_ERR_NOCRED;
             /* go to end of file */
-            if( fseek( fp, 0L, SEEK_END ) != 0 ) return RVI_ERROR_NOCRED;
+            if( fseek( fp, 0L, SEEK_END ) != 0 ) return RVI_ERR_NOCRED;
             /* get value of file position indicator */
             long bufsize = ftell(fp);
-            if( bufsize == -1 ) return RVI_ERROR_NOCRED;
+            if( bufsize == -1 ) return RVI_ERR_NOCRED;
             cred = malloc(sizeof(char) * (bufsize + 1));
             if( !cred ) return ENOMEM;
             /* go back to start of file */
@@ -656,14 +641,17 @@ int read_json_config ( rvi_handle handle, const char * filename )
                 rvi_list_insert( ctx->creds, cred );
             }
             fclose( fp );
+            free(path);
             i++;
         }
     }
 
+exit:
+    BIO_free_all( certbio );
     X509_free( cert );
-    closedir( d );
+    if( d ) closedir( d );
 
-    return RVI_OK;
+    return err;
 }
 
 /** Get arrays of right_to_receive and right_to_invoke */
@@ -821,7 +809,7 @@ char *get_pubkey_file( char *filename )
     ret = PEM_write_bio_PUBKEY(mbio, pkey);
 
     if( ret == 0 ) {
-        ret = RVI_ERROR_OPENSSL;
+        ret = RVI_ERR_OPENSSL;
         goto exit;
     }
     /* Find out how long our new string is */
@@ -942,16 +930,8 @@ exit:
     return ret;
 }
 
-/** @brief Initialize the RVI library. Call before using any other functions.
- *
- * @param config_filename - Path to the file containing RVI config options:
- *                          credentials - JWT encoded string
- *                          device_cert - file with device's X.509 cert
- *                          device_key - file with device's private key
- *                          intermediateCA - file with intermediate CA certs
- *                          root_cert - file with root cert
- *
- * @return A handle for the API. On failure, a NULL pointer will be returned.
+/*
+ * Initialize the RVI library. Call before using any other functions.
  */
 
 rvi_handle rvi_init ( char *config_filename )
@@ -980,9 +960,6 @@ rvi_handle rvi_init ( char *config_filename )
      * pointer to null */
     ctx->creds = malloc( sizeof( rvi_list ) );
     rvi_list_initialize( ctx->creds );
-
-    /* parse config file */
-    /* need: device cert; root cert; device key; credential */
 
     ctx->rights = malloc( sizeof( rvi_list ) );
     rvi_list_initialize( ctx->rights );
@@ -1043,14 +1020,8 @@ err:
     return NULL;
 }
 
-/** @brief Tear down the API.
- *
- * Calling applications are expected to call this to cleanly tear down the API.
- *
- * @param handle - The handle for the RVI context to clean up.
- *
- * @return 0 (RVI_OK) on success
- *         Error code on failure.
+/* 
+ * Tear down the API.
  */
 
 int rvi_cleanup(rvi_handle handle)
@@ -1147,25 +1118,8 @@ int rvi_cleanup(rvi_handle handle)
 /* RVI CONNECTION MANAGEMENT */
 /* ************************* */
 
-/** @brief Connect to a remote node at a specified address and port. 
- *
- * This function will attempt to connect to a remote node at the specified addr
- * and port. It will spawn a new connection and block until all handshake and
- * RVI negotiations are complete. On success, it will return the file
- * descriptor for the new socket. On failure, it will return a negative error
- * value. 
- *
- * New services may become immediately available upon connecting to a remote
- * node. To discover the services that are currently available, use the
- * rvi_get_services() function. Services may be invoked via
- * rvi_invoke_remote_service() using the fully-qualified service name.
- *
- * @param handle - The handle to the RVI context.
- * @param addr - The address of the remote connection.
- * @param port - The target port for the connection.
- *
- * @return A file descriptor for the new socket on success.
- *         A negative error value on failure.
+/* 
+ * Connect to a remote node at a specified address and port. 
  */
 int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 {
@@ -1188,12 +1142,12 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
      */
     sbio = BIO_new_ssl_connect(ctx->ssl_ctx);
     if(!sbio) {
-        ret = -RVI_ERROR_OPENSSL;
+        ret = -RVI_ERR_OPENSSL;
         goto err;
     }
     BIO_get_ssl(sbio, &ssl);
     if(!ssl) {
-        ret = -RVI_ERROR_OPENSSL;
+        ret = -RVI_ERR_OPENSSL;
         goto err;
     }
 
@@ -1229,12 +1183,12 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port)
     if( ret != RVI_OK ) goto err;
 
     if(BIO_do_connect(sbio) <= 0) {
-        ret = -RVI_ERROR_OPENSSL;
+        ret = -RVI_ERR_OPENSSL;
         goto err;
     }
 
     if(BIO_do_handshake(sbio) <= 0) {
-        ret = -RVI_ERROR_OPENSSL;
+        ret = -RVI_ERR_OPENSSL;
         goto err;
     }
 
@@ -1264,13 +1218,8 @@ err:
     return ret;
 }
 
-/** @brief Disconnect from a remote node with a specified file descriptor. 
- *
- * @param handle - The handle to the RVI context.
- * @param fd - The file descriptor for the connection to terminate.
- *
- * @return 0 (RVI_OK)  on success.
- *         Error code on failure.
+/* 
+ * Disconnect from a remote node with a specified file descriptor. 
  */
 int rvi_disconnect(rvi_handle handle, int fd)
 {
@@ -1313,21 +1262,8 @@ int rvi_disconnect(rvi_handle handle, int fd)
     return RVI_OK;
 }
 
-/** @brief Return all file descriptors in the RVI context
- *
- * @param handle    - The handle to the RVI context.
- * @param conn      - Pointer to a buffer to store file descriptors (small
- *                    integers) for each remote RVI node.  
- * @param conn_size - Pointer to size of 'conn' buffer. This should be
- *                    initialized to the size of the conn buffer. On success,
- *                    it will be updated with the number of file descriptors
- *                    updated.
- *
- * This function will fill the conn buffer with active file descriptors from
- * the RVI context and update conn_size to indicate the final size.
- *
- * @return 0 (RVI_OK) on success.
- *         Error code on failure.
+/* 
+ * Return all file descriptors in the RVI context
  */
 int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
 {
@@ -1364,15 +1300,8 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
 /* ********************** */
 
 
-/** @brief Register a service with a callback function
- *
- * @param handle - The handle to the RVI context.
- * @param service_name - The fully-qualified service name to register
- * @param callback - The callback function to be executed upon service
- *                   invocation.
- *
- * @return 0 (RVI_OK) on success 
- *         Error code on failure.
+/* 
+ * Register a service with a callback function
  */
 int rvi_register_service( rvi_handle handle, const char *service_name, 
                           rvi_callback_t callback, 
@@ -1410,13 +1339,8 @@ exit:
     return err;
 }
 
-/** @brief Unregister a previously registered service
- *
- * @param handle - The handle to the RVI context
- * @param service_name The fully-qualified service name to deregister
- *
- * @return 0 (RVI_OK) on success. 
- *         Error code on failure.
+/* 
+ * Unregister a previously registered service
  */
 int rvi_unregister_service(rvi_handle handle, const char *service_name)
 {
@@ -1471,22 +1395,11 @@ int rvi_remove_service(rvi_handle handle, const char *service_name)
                           ctx->service_reg_idx->root, stmp );
     rvi_service_destroy( stmp );
 
-    return 0;
+    return RVI_OK;
 }
 
-/** @brief Get list of services available
- *
- * This function fills the buffer at result with pointers to strings, up to the
- * value indicated by len. Memory for each string is dynamically allocated by
- * the library and must be freed by the calling application. Before returning,
- * len is updated with the actual number of strings.
- * 
- * @param handle - The handle to the RVI context.
- * @param result - A pointer to a block of pointers for storing strings
- * @param len - The maximum number of pointers allocated in result
- *
- * @return 0 (RVI_OK) on success
- *         Error code on failure.
+/* 
+ * Get list of services available
  */
 int rvi_get_services(rvi_handle handle, char **result, int *len)
 {
@@ -1518,13 +1431,8 @@ int rvi_get_services(rvi_handle handle, char **result, int *len)
     return RVI_OK;
 }
 
-/** @brief Invoke a remote service
- *
- * @param handle - The handle to the RVI context.
- * @param service_name - The fully-qualified service name to invoke 
- * @param parameters - A JSON structure containing the named parameter pairs
- *
- * @return 0 on success. Error code on failure.
+/* 
+ * Invoke a remote service
  */
 int rvi_invoke_remote_service(rvi_handle handle, const char *service_name, 
                               const json_t *parameters)
@@ -1581,7 +1489,7 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
             );
     if( ! rcv ) {
         printf("JSON error");
-        ret = RVI_ERROR_JSON;
+        ret = RVI_ERR_JSON;
         goto exit;
     }
 
@@ -1650,7 +1558,7 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
         if( read  <= 0 )  { err = EIO; goto exit; } 
 
         root = json_loads( buf, 0, &jserr ); /* RVI commands are JSON structs */
-        if( !root ) { err = RVI_ERROR_JSON; goto exit; }
+        if( !root ) { err = RVI_ERR_JSON; goto exit; }
 
         /* Get RVI cmd from string */
         strcpy( cmd, json_string_value( json_object_get( root, "cmd" ) ) );
@@ -1665,7 +1573,7 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
             /* Echo the ping back */
             BIO_puts( rtmp->sbio, buf );
         } else { /* UNKNOWN RVI COMMAND */
-            err = -1; /* TODO: More informative error */
+            err = -RVI_ERR_NOCMD; 
             goto exit;
         }
 
@@ -1698,18 +1606,18 @@ int rvi_read_au( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
 
     tmp = json_object_get( msg, "creds" );
     if( !tmp ) {
-        err = RVI_ERROR_JSON;
+        err = RVI_ERR_JSON;
         goto exit;
     }
 
     BIO_get_ssl( remote->sbio, &ssl );
     if( !ssl ) {
-        err = RVI_ERROR_OPENSSL;
+        err = RVI_ERR_OPENSSL;
         goto exit;
     }
 
     if( ! ( cert = SSL_get_peer_certificate( ssl ) ) ) {
-        err = RVI_ERROR_OPENSSL;
+        err = RVI_ERR_OPENSSL;
         goto exit;
     }
 
@@ -1751,7 +1659,7 @@ int rvi_write_au( rvi_handle handle, rvi_remote_t *remote )
                     "creds", creds   /* fill with json array */
                   ); 
     if( !au ) {
-        err = RVI_ERROR_JSON;
+        err = RVI_ERR_JSON;
         goto exit;
     }
 
@@ -1781,7 +1689,7 @@ int rvi_read_sa( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
 
     tmp = json_object_get( msg, "svcs" );
     if( !tmp ) {
-        err = RVI_ERROR_JSON;
+        err = RVI_ERR_JSON;
         goto exit;
     }
 
@@ -1854,7 +1762,7 @@ int rvi_all_service_announce( rvi_handle handle, rvi_remote_t *remote )
             "svcs", svcs              /* fill with array of services */
             ); 
     if( !sa ) {
-        err = RVI_ERROR_JSON;
+        err = RVI_ERR_JSON;
         goto exit;
     }
 
@@ -1883,17 +1791,17 @@ int rvi_service_announce( rvi_handle handle, rvi_service_t *service, int availab
     svcs = json_array();
     json_array_append_new( svcs, json_string( service->name ) );
     if( ( err = rvi_rrcv_err( ctx->rights, service->name ) ) ) {
-        err = -1; /* TODO: We do not have right to receive */
+        err = -RVI_ERR_RIGHTS; 
         goto exit;
     }
 
     if( service->registrant != 0 ) {
-        err = -1; /* TODO: We didn't register, so we don't announce */
+        err = -RVI_ERR_RIGHTS; 
         goto exit;
     }
 
     if( !(ctx->remote_idx->count) ) {
-        err = -1; /* TODO more informative error */
+        err = -ENXIO; 
         goto exit;
     }
 
@@ -1940,7 +1848,7 @@ int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
 
     tmp = json_object_get( msg, "data" );
     if( !tmp ) {
-        err = RVI_ERROR_JSON;
+        err = RVI_ERR_JSON;
         goto exit;
     }
 
@@ -1959,14 +1867,13 @@ int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
     skey.name = strdup( sname );
     stmp = btree_search( ctx->service_name_idx, &skey );
     if( !stmp ) {
-        printf("No service: %s\n", sname );
-        err = -1; /* TODO: More informative error */
+        err = ENXIO; 
         goto exit;
     }
 
     params = json_object_get( tmp, "parameters" );
     if( !params ) {
-        err = RVI_ERROR_JSON;
+        err = RVI_ERR_JSON;
         goto exit;
     }
 

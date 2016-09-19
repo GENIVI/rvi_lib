@@ -278,6 +278,7 @@ void get_services(void)
         free(services);
         return;
     }
+
     for(int i = 0; i < len; i++) {
         printf("\t\%s\n", services[i]);
     }

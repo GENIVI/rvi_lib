@@ -1,4 +1,4 @@
-# REMOTE VEHICLE INTERFACE
+# REMOTE VEHICLE INTERFACE {#mainpage}
 Remote Vehicle Interface (RVI) provides an architecture which, through its
 specified components, enables connected vehicles and other devices to form a
 secured distributed, sparsely connected peer-to-peer network. In particular,

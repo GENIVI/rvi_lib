@@ -1,0 +1,12 @@
+{
+  "dev": {
+    "key":  "./priv/clientkey.pem",
+    "cert": "./priv/clientcert.pem",
+    "id": "genivi.org/client/bbfbb478-d628-480a-8528-cff40d73678f"
+  },
+  "ca": {
+    "cert": "./priv/cacert.pem",
+    "dir":  "./priv/"
+  },
+  "creddir": "priv/"
+}
