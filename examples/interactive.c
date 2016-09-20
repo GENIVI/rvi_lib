@@ -9,12 +9,11 @@
 #include <time.h>
 
 #include "rvi.h"
-#include "jansson.h"
 
 #define BUFSIZE 256
 #define LEN 10
 
-void callbackFunc(int fd, void *service_data, json_t *parameters);
+void callbackFunc(int fd, void *service_data, const char *parameters);
 
 void waitFor(unsigned int secs);
 
@@ -58,7 +57,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void callbackFunc(int fd, void *service_data, json_t *parameters)
+void callbackFunc(int fd, void *service_data, const char *parameters)
 {
     printf("inside the callback function, invoked by fd %d\n", fd);
 }
@@ -298,17 +297,17 @@ void smpl_invoke(void)
     }
     char input[BUFSIZE] = {0};
     char params[BUFSIZE] = {0};
-    json_t *parameters = {0};
 
     scanf("%s", input);
     fflush(stdin);
     printf("Okay, you chose to invoke %s. Any parameters?\n"
                     "Please supply a JSON object: ", input);
     scanf("%s", params);
-    parameters = json_loads(params, 0, NULL);
-    int stat = rvi_invoke_remote_service(myHandle, input, parameters);
-    if( stat ) {
-        printf("Couldn't invoke %s...\n", input);
+    int stat = rvi_invoke_remote_service(myHandle, input, params);
+    if( stat == RVI_ERR_JSON ) {
+        printf( "Error: invalid JSON for parameters\n" );
+    } else if ( stat ) {
+        printf( "Error: couldn't invoke %s\n", input );
     } else {
         printf("Invoked %s!\n", input);
     }

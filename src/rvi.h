@@ -5,19 +5,24 @@
  * file, you can obtain one at http://mozilla.org/MPL/2.0.
  */
 
+#ifndef _RVI_H
+#define _RVI_H
+
 /** @file rvi.h
- * @brief API for the Remote Vehicle Interaction library.
+ * @brief Remote Vehicle Interaction library.
  *
  * This file is responsible for exposing all available function prototypes and
  * data types for the RVI library.
  *
  * This is an initial prototype of the RVI library in C and is subject to
- * change. The intended use is to allow a calling application to connect to a
- * remote RVI node, discover services, register additional services, and invoke
- * remote services.
+ * change. The intended use is to allow a calling application to connect to
+ * remote RVI nodes, discover services, register additional services, and
+ * invoke remote services.
  *
  *
  * The RVI library depends on the following libraries:
+ *
+ * C standard library: https://www-s.acm.illinois.edu/webmonkeys/book/c_guide/index.html
  *
  * libJWT: https://github.com/benmcollins/libjwt/
  *
@@ -25,17 +30,16 @@
  *
  * OpenSSL: https://www.openssl.org/
  *
+ *
+ * The RVI library does not currently use the following, but may include it for
+ * future interopability with RVI Core nodes:
+ *
  * mpack: http://ludocode.github.io/mpack/
  *
  *
  *
  * @author Tatiana Jamison &lt;tjamison@jaguarlandrover.com&gt;
  */
-
-#ifndef _RVI_H
-#define _RVI_H
-
-#include <jansson.h>
 
 // **********
 // DATA TYPES
@@ -45,21 +49,35 @@
 typedef void *rvi_handle;
 
 /** Function signature for RVI callback functions */
-typedef void (*rvi_callback_t) (int fd, void* service_data, json_t *parameters);
+typedef void (*rvi_callback_t) ( int fd, 
+                                 void* service_data, 
+                                 const char *parameters
+                               );
 
 /** Function return status codes */
 typedef enum {
-    RVI_OK                  = 0,    /* Success */
-    RVI_ERR_OPENSSL         = 100,  /* Unhandled error from OpenSSL */
-    RVI_ERR_NOCONFIG        = 1001, /* Configuration error */
-    RVI_ERR_JSON            = 1002, /* Error in JSON */
-    RVI_ERR_SERVCERT        = 1003, /* Server certificate is missing */
-    RVI_ERR_CLIENTCERT      = 1004, /* Client certificate is missing */
-    RVI_ERR_NORCVCERT       = 1005, /* Client did not receive server cert */
-    RVI_ERR_STREAMEND       = 1006, /* Stream end encountered unexpectedly */
-    RVI_ERR_NOCRED          = 1007, /* No credentials */
-    RVI_ERR_NOCMD           = 1008, /* No (known) command */
-    RVI_ERR_RIGHTS          = 1009, /* Error in rights */
+    /** Success */
+    RVI_OK                  = 0,    
+    /** Unhandled error from OpenSSL */
+    RVI_ERR_OPENSSL         = 100,  
+    /** Configuration error */
+    RVI_ERR_NOCONFIG        = 1001, 
+    /** Error in JSON */
+    RVI_ERR_JSON            = 1002, 
+    /** Server certificate is missing */
+    RVI_ERR_SERVCERT        = 1003, 
+    /** Client certificate is missing */
+    RVI_ERR_CLIENTCERT      = 1004, 
+    /** Client did not receive server cert */
+    RVI_ERR_NORCVCERT       = 1005, 
+    /** Stream end encountered unexpectedly */
+    RVI_ERR_STREAMEND       = 1006, 
+    /** No credentials */
+    RVI_ERR_NOCRED          = 1007, 
+    /** No (known) command */
+    RVI_ERR_NOCMD           = 1008, 
+    /** No right for that operation */
+    RVI_ERR_RIGHTS          = 1009 
 } rvi_status;
 
 // ***************************
@@ -67,6 +85,26 @@ typedef enum {
 // ***************************
 
 /** @brief Initialize the RVI library. Call before using any other functions.
+ *
+ * The name of a JSON configuration file must be supplied. Example config:
+ *
+ *      {
+ *       "dev": {
+ *           "key":  "./priv/clientkey.pem",
+ *           "cert": "./priv/clientcert.pem",
+ *           "id":   "genivi.org/client/bbfbb478-d628-480a-8528-cff40d73678f"
+ *       },
+ *       "ca": {
+ *           "cert": "./priv/cacert.pem",
+ *           "dir":  "./priv/"
+ *       },
+ *       "creddir": "./priv/"
+ *      }
+ *
+ * Notably, the device ID should be a unique ID generated from an external
+ * source, e.g., util-linux's uuidgen or Microsoft's guidgen.exe.
+ *
+ * The ID format is "domain/device-type/uuid".
  *
  * @param config_filename - Path to the file containing RVI config options.
  *
@@ -79,6 +117,8 @@ rvi_handle rvi_init(char *config_filename);
 /** @brief Tear down the API.
  *
  * Calling applications are expected to call this to cleanly tear down the API.
+ * This will disconnect from all active connections and free memory allocated
+ * by the library.
  *
  * @param handle - The handle for the RVI context to clean up.
  *
@@ -135,7 +175,7 @@ int rvi_disconnect(rvi_handle handle, int fd);
  * @param conn_size - Pointer to size of 'conn' buffer. This should be
  *                    initialized to the size of the conn buffer. On success,
  *                    it will be updated with the number of file descriptors
- *                    updated.
+ *                    returned.
  *
  * This function will fill the conn buffer with active file descriptors from
  * the RVI context and update conn_size to indicate the final size.
@@ -231,7 +271,7 @@ int rvi_get_services(rvi_handle handle, char **result, int* len);
  *         error code otherwise.
  */
 int rvi_invoke_remote_service(rvi_handle handle, const char *service_name, 
-                              const json_t *parameters);
+                              const char *parameters);
 
 
 // ******************

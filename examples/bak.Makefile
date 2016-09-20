@@ -10,12 +10,20 @@ CFLAGS +=		\
 	-Wall		\
 	-fPIC		\
 
+JWTDIR = /media/tjamison/b2a03dd8-91cc-4c25-acc8-c7016244a589/tjamison/work/git/libjwt
+
+JWTINC = -I$(JWTDIR)/include -Wl,-rpath $(JWTDIR)/lib
+
 LDFLAGS+=		\
 	-L.			\
 	-L./../src	\
 
 LIBRARIES+=		\
+	-lssl		\
+	-lcrypto	\
+	-ljansson	\
 	-lrvi		\
+#	-ljwt		\
 
 INCLUDES=		\
 

@@ -7,18 +7,6 @@
 
 /** @file rvi.c
  *
- * This is an initial prototype of the RVI library in C and is subject to
- * change. The intended use is to allow a calling application to connect to a
- * remote RVI node, discover services, register additional services, and invoke
- * remote services.
- *
- * The RVI library depends on the following libraries:
- *
- * libJWT: https://github.com/benmcollins/libjwt/ 
- * Jansson: http://www.digip.org/jansson/ 
- * OpenSSL: https://www.openssl.org/ 
- * mpack: http://ludocode.github.io/mpack/ 
- *
  * @author Tatiana Jamison &lt;tjamison@jaguarlandrover.com&gt;
  */
 
@@ -1224,7 +1212,7 @@ err:
 int rvi_disconnect(rvi_handle handle, int fd)
 {
     if( !handle || fd < 3 ) 
-        return EINVAL;
+        return -EINVAL;
     
     rvi_context_t * ctx = (rvi_context_t *)handle;
     rvi_remote_t    rkey = {0};
@@ -1237,13 +1225,11 @@ int rvi_disconnect(rvi_handle handle, int fd)
 
     rtmp = btree_search(ctx->remote_idx, &rkey);
     if(!rtmp) {
-        printf("No such connection\n");
-        return -1;
+        return -ENXIO;
     }
 
     if( ( res = btree_delete(ctx->remote_idx, 
                              ctx->remote_idx->root, rtmp ) ) < 0 ) {
-        printf("Error deleting remote key from tree\n");
         return -1;
     } 
     /* Search the service tree for any services registered by the remote */
@@ -1355,12 +1341,12 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name)
     rvi_service_t *stmp = btree_search( ctx->service_name_idx, &skey );
     
     if( !stmp ) {
-        err = -1;
+        err = -ENXIO;
         goto exit;
     }
 
     if( stmp->registrant != 0 ) {
-        return -1;
+        err = -RVI_ERR_RIGHTS;
         goto exit;
     }
 
@@ -1388,7 +1374,7 @@ int rvi_remove_service(rvi_handle handle, const char *service_name)
     free( skey.name );
     
     if( !stmp )
-        return -1;
+        return -ENOENT;
     btree_delete( ctx->service_name_idx, 
                           ctx->service_name_idx->root, stmp );
     btree_delete( ctx->service_reg_idx, 
@@ -1435,7 +1421,7 @@ int rvi_get_services(rvi_handle handle, char **result, int *len)
  * Invoke a remote service
  */
 int rvi_invoke_remote_service(rvi_handle handle, const char *service_name, 
-                              const json_t *parameters)
+                              const char *parameters)
 {
     if( !handle || !service_name )
         return EINVAL;
@@ -1457,7 +1443,6 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
 
     stmp = btree_search(ctx->service_name_idx, &skey);
     if( !stmp ) { /* if not found, return error */
-        printf("No such service\n");
         ret = ENOENT;
         goto exit;
     }
@@ -1466,16 +1451,16 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
     rkey.fd = stmp->registrant;
 
     rtmp = btree_search(ctx->remote_idx, &rkey);
-    if( !rtmp ) { /* if not found, return error */
-        printf("No such connection\n");
-        ret = ENXIO;
-        goto exit;
-    }
+    if( !rtmp ) { ret = ENXIO; goto exit; }
 
     time(&rawtime);
     timeout = rawtime + wait;
 
     /* prepare rcv message */
+    if( parameters ) {
+        params = json_loads( parameters, 0, NULL );
+    }
+    if ( !params ) { ret = RVI_ERR_JSON; goto exit; }
 
     rcv = json_pack( 
             "{s:s, s:i, s:s, s:{s:s, s:i, s:o}}",
@@ -1484,11 +1469,10 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
             "mod", "proto_json_rpc",
             "data", "service", service_name,
                     "timeout", timeout,
-                    "parameters", 
-                    parameters ? parameters : (params = json_object())
+                    "parameters", params
             );
     if( ! rcv ) {
-        printf("JSON error");
+        printf("JSON error\n");
         ret = RVI_ERR_JSON;
         goto exit;
     }
@@ -1843,6 +1827,7 @@ int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
     json_t          *params = NULL;
     rvi_service_t   skey    = {0};
     rvi_service_t   *stmp   = NULL;
+    char            *parameters = NULL;
     time_t          rawtime;
     const char      *sname;
 
@@ -1876,8 +1861,9 @@ int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
         err = RVI_ERR_JSON;
         goto exit;
     }
+    parameters = json_dumps( params, JSON_COMPACT );
 
-    stmp->callback( remote->fd, stmp->data, params );
+    stmp->callback( remote->fd, stmp->data, parameters );
 
 exit:
     if( skey.name ) free( skey.name );
