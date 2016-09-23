@@ -33,3 +33,7 @@
 
 # Private configuration files
 ./priv/*
+
+# Build artifacts
+build/*
+tmp/*

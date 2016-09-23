@@ -8,6 +8,8 @@
 #ifndef _RVI_H
 #define _RVI_H
 
+#include <stddef.h>
+
 /** @file rvi.h
  * @brief Remote Vehicle Interaction library.
  *
@@ -145,6 +147,8 @@ int rvi_cleanup(rvi_handle handle);
  * rvi_get_services() function. Services may be invoked via
  * rvi_invoke_remote_service() using the fully-qualified service name.
  *
+ * This operation will block until all TLS read/write operations are complete.
+ *
  * @param handle    - The handle to the RVI context.
  * @param addr      - The address of the remote connection.
  * @param port      - The target port for the connection. This can be a
@@ -179,6 +183,8 @@ int rvi_disconnect(rvi_handle handle, int fd);
  *
  * This function will fill the conn buffer with active file descriptors from
  * the RVI context and update conn_size to indicate the final size.
+ *
+ * This operation is entirely local.
  *
  * @return 0 on success,
  *         error code otherwise.
@@ -240,6 +246,8 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name);
  * value indicated by len. Memory for each string is dynamically allocated by
  * the library and must be freed by the calling application. Before returning,
  * len is updated with the actual number of strings.
+ *
+ * This operation is entirely local.
  * 
  * @param handle - The handle to the RVI context.
  * @param result - A pointer to a block of pointers for storing strings

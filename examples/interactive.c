@@ -5,6 +5,9 @@
  * file, you can obtain one at http://mozilla.org/MPL/2.0.
  */
 
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
@@ -60,6 +63,7 @@ int main(int argc, char *argv[])
 void callbackFunc(int fd, void *service_data, const char *parameters)
 {
     printf("inside the callback function, invoked by fd %d\n", fd);
+    printf("received parameters: \n\t%s\n", parameters);
 }
 
 void waitFor(unsigned int secs) 
@@ -279,7 +283,7 @@ void get_services(void)
     }
 
     for(int i = 0; i < len; i++) {
-        printf("\t\%s\n", services[i]);
+        printf("\t%s\n", services[i]);
     }
             
     char **svcs = services;

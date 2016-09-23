@@ -94,7 +94,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 
 <p>Remote Vehicle Interaction library.  
 <a href="#details">More...</a></p>
-
+<div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
+</div>
 <p><a href="rvi_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
@@ -305,6 +306,7 @@ Functions</h2></td></tr>
 <p>Connect to a remote node at a specified address and port. </p>
 <p>This function will attempt to connect to a remote node at the specified addr and port. It will spawn a new connection and block until all handshake and RVI negotiations are complete. On success, it will return the file descriptor for the new socket. On failure, it will return a negative error value.</p>
 <p>New services may become immediately available upon connecting to a remote node. To discover the services that are currently available, use the <a class="el" href="rvi_8h.html#a9fc0ac94f964cd989fc65e3c7ea0b2d3" title="Get list of services available. ">rvi_get_services()</a> function. Services may be invoked via <a class="el" href="rvi_8h.html#aca2164184c018259f9e6740849efaf8e" title="Invoke a remote service. ">rvi_invoke_remote_service()</a> using the fully-qualified service name.</p>
+<p>This operation will block until all TLS read/write operations are complete.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>- The handle to the RVI context. </td></tr>
@@ -393,6 +395,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <p>This function will fill the conn buffer with active file descriptors from the RVI context and update conn_size to indicate the final size.</p>
+<p>This operation is entirely local.</p>
 <dl class="section return"><dt>Returns</dt><dd>0 on success, error code otherwise. </dd></dl>
 
 </div>
@@ -429,6 +432,7 @@ Functions</h2></td></tr>
 
 <p>Get list of services available. </p>
 <p>This function fills the buffer at result with pointers to strings, up to the value indicated by len. Memory for each string is dynamically allocated by the library and must be freed by the calling application. Before returning, len is updated with the actual number of strings.</p>
+<p>This operation is entirely local.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>- The handle to the RVI context. </td></tr>
@@ -672,7 +676,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Sep 20 2016 11:53:29 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 22 2016 17:23:50 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

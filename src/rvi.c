@@ -20,6 +20,7 @@
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
 
+#include <jansson.h>
 #include <jwt.h>
 
 #include "rvi.h"
