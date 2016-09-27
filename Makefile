@@ -10,7 +10,7 @@
 #	Top level Remote Vehicle Interface build rules.
 #
 
-MODULES = src examples libjwt
+MODULES = src examples
 
 # Look for include files in each of the modules 
 CFLAGS += $(patsubst %,-I%, $(MODULES)) \
@@ -62,7 +62,7 @@ libs: $(foreach var,$(MODLIB),$(INCLUDE_$(var))) jwt
 
 # Build jwt
 jwt: 
-	cd libjwt; cmake .; make jwt/fast;
+	git submodule init; git submodule update; cd libjwt; cmake .; make jwt;
 
 # Link the program
 $(TARGET): $(OBJ) libs

@@ -1,0 +1,4 @@
+[submodule "libjwt"]
+	path = libjwt
+	url = git@github.com:tjamison/libjwt.git
+	branch = rs256
