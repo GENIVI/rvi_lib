@@ -61,9 +61,10 @@ These can also be installed via `apt` on Ubuntu:
 
     $ sudo apt-get install git make cmake gcc
 
-## Clone repo
-Clone or download this repo using the "Clone or Download" button at the top of
-the repo (or your favorite git method).
+## Clone repo recursively
+Clone or download this repo:
+
+    $ git clone --recursive https://github.com/GENIVI/rvi_lib.git
 
 ## Build
 

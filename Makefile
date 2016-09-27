@@ -71,13 +71,12 @@ $(TARGET): $(OBJ) libs
 	$(CC) -o $@ $(OBJ) $(CFLAGS) $(LDFLAGS)  $(LIBS) \
 		$(SHAREDLIBS)
 
-install: jwt libs docs
+install: jwt libs 
 	cd libjwt; make install; cd ..; \
 		echo -- Installing: $(INSTALL_PATH)/lib/librvi.so;\
 		cp $(LLIBDIR)/librvi.so $(INSTALL_PATH)/lib;\
 		echo -- Installing: $(INSTALL_PATH)/include/rvi.h;\
 		cp -p $(CURDIR)/src/rvi.h $(INSTALL_PATH)/include;\
-		cp -p -r $(CURDIR)/docs $(INSTALL_PATH)/share/rvi
 
 docs: Doxyfile $(INCLUDES)
 	echo "Rebuilding the RVI documentation..."; \
