@@ -1776,6 +1776,7 @@ int rvi_service_announce( rvi_handle handle, rvi_service_t *service, int availab
     rvi_context_t   *ctx    = (rvi_context_t *)handle;
     json_t          *svcs   = NULL;
     json_t          *sa     = NULL;
+    char            *saString = NULL;
 
     svcs = json_array();
     json_array_append_new( svcs, json_string( service->name ) );
@@ -1800,7 +1801,7 @@ int rvi_service_announce( rvi_handle handle, rvi_service_t *service, int availab
             "svcs", svcs                        /* fill with services */
             );
 
-    char *saString = json_dumps(sa, JSON_COMPACT);
+    saString = json_dumps(sa, JSON_COMPACT);
 
     btree_iter iter = btree_iter_begin( ctx->remote_idx );
         while( !btree_iter_at_end( iter  ) ) {
@@ -1816,6 +1817,7 @@ int rvi_service_announce( rvi_handle handle, rvi_service_t *service, int availab
 
 exit:
     if( saString ) free( saString );
+    json_decref(svcs);
     json_decref(sa);
 
     return err;

@@ -113,9 +113,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <li>gcc (or another c compiler)</li>
 </ul>
 <p>These can also be installed via <code>apt</code> on Ubuntu: </p><pre class="fragment">$ sudo apt-get install git make cmake gcc
-</pre><h2>Clone repo</h2>
-<p>Clone or download this repo using the "Clone or Download" button at the top of the repo (or your favorite git method).</p>
-<h2>Build</h2>
+</pre><h2>Clone repo recursively</h2>
+<p>Clone or download this repo: </p><pre class="fragment">$ git clone --recursive https://github.com/GENIVI/rvi_lib.git
+</pre><h2>Build</h2>
 <p>Build the library using make. After cloning: </p><pre class="fragment">$ cd rvi_lib
 $ make
 </pre><p>If you would like to see an example of an application using <code>rvi_lib</code>, run the following: </p><pre class="fragment">$ make examples
@@ -197,7 +197,7 @@ and CSR" and "Sign the CSR" steps above for the server. See <a href="https://git
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Sep 27 2016 09:06:11 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Sep 27 2016 11:13:00 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>
