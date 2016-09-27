@@ -207,11 +207,11 @@ The credential ID is _not_ the same as the device ID.
 
 The following are mandatory:
 
-    * `invoke`
-    * `receive`
-    * `root_key`
-    * `device_cert`
-    * `issuer`
+* `invoke`
+* `receive`
+* `root_key`
+* `device_cert`
+* `issuer`
 
 Please note that order of flags matters.
 
