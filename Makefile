@@ -14,7 +14,7 @@ MODULES = src examples
 
 # Look for include files in each of the modules 
 CFLAGS += $(patsubst %,-I%, $(MODULES)) \
-		  -fPIC -g -Wall -gnu99
+		  -fPIC -g -Wall -std=gnu99
 
 #MAKEFLAGS += j
 
