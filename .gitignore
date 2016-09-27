@@ -32,7 +32,7 @@
 *.dSYM/
 
 # Private configuration files
-./priv/*
+examples/priv/*
 
 # Build artifacts
 build/*

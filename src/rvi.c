@@ -905,6 +905,10 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
     bio = BIO_new( BIO_s_mem() );
     BIO_puts( bio, (const char *)tmp );
     dcert = PEM_read_bio_X509( bio, NULL, 0, NULL );
+    if( !dcert ) {
+        ret = RVI_ERR_OPENSSL;
+        goto exit;
+    }
     ret = X509_cmp( dcert, cert );
 
 exit:
