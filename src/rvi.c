@@ -383,6 +383,8 @@ rvi_rights_t *rvi_rights_create (   const char *right_to_receive,
 /* This function destroys a rights struct and frees all allocated memory */
 void rvi_rights_destroy ( rvi_rights_t *rights ) 
 {
+    if( !rights )
+        return;
     json_decref( rights->receive );
     json_decref( rights->invoke );
     free( rights );
@@ -733,6 +735,7 @@ int rvi_rrcv_err( rvi_list *rlist, const char *service_name )
     rvi_list_entry *ptr = rlist->listHead;
     while( ptr ) {
         rvi_rights_t *tmp = (rvi_rights_t *)ptr->pointer;
+        if( !tmp ) goto exit;
         json_array_foreach( tmp->receive, index, value ) {
             const char *pattern = json_string_value( value );
             if( ( err = compare_pattern( pattern, service_name ) ) == RVI_OK )
@@ -1542,8 +1545,14 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
         rkey.fd = fd_arr[i]; /* Set the key to the requested fd */
         i++;
         rtmp = btree_search( ctx->remote_idx, &rkey ); /* Find the connection */
+        if( !rtmp ) {
+            err = ENXIO;
+            printf( "No connection on %d\n", rkey.fd );
+            continue;
+        }
         BIO_get_ssl( rtmp->sbio, &ssl );
         if( !ssl ) {
+            err = RVI_ERR_OPENSSL;
             printf( "Error reading on fd %d, try again\n", rtmp->fd );
             continue;
         }
@@ -1580,6 +1589,9 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
             goto exit;
         }
 
+        /* Set the mode back to its original bitmask */
+        SSL_set_mode( ssl, mode );
+
         /* We no longer need the string we received */
         memset( buf, 0, len );
 
@@ -1588,8 +1600,6 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
         
     free( buf );
 
-    /* Set the mode back to its original bitmask */
-    SSL_set_mode( ssl, mode );
 
 exit:
     return err;

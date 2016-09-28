@@ -21,12 +21,13 @@ capabilities including server behaviors.
 
 # Build Requirements
 
-`rvi_lib` depends on the following libraries:
+`rvi_lib` depends on the following libraries and tools:
 
 1. [C Standard Library](https://www-s.acm.illinois.edu/webmonkeys/book/c_guide/index.html)
 2. [OpenSSL](https://www.openssl.org/)
 3. [Jansson](http://www.digip.org/jansson/)
 4. [LibJWT](https://github.com/benmcollins/libjwt) †
+5. [cmake](https://cmake.org/)
 
 † Please note that this project contains modified code for libjwt to support
 public-private key cryptography for JSON Web Tokens. As such, no further
@@ -45,7 +46,7 @@ nodes:
 
 # Build Instructions
 
-## Install prerequisites
+#### Install prerequisites
 Install openssl and Jansson. On Ubuntu:
     
     $ sudo apt-get install libssl-dev libjansson-dev
@@ -61,12 +62,12 @@ These can also be installed via `apt` on Ubuntu:
 
     $ sudo apt-get install git make cmake gcc
 
-## Clone repo recursively
+#### Clone repo recursively
 Clone or download this repo:
 
     $ git clone --recursive https://github.com/GENIVI/rvi_lib.git
 
-## Build
+#### Build
 
 Build the library using make. After cloning:
 
@@ -83,7 +84,7 @@ Initiating the RVI context requires a configuration file, along with X.509
 certificates and one or more JWT credentials. See the "Configuration" section
 for details.
 
-## Install
+#### Install
 To install the library and headers for use in applications or development, run
 the following:
 
