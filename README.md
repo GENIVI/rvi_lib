@@ -93,8 +93,8 @@ certificates and one or more JWT credentials. See the "Configuration" section
 for details on configuring your own.
 
 Insecure configuration details, including private keys and certificates, are
-provided in the [examples] folder. _*THESE CREDENTIALS MUST NOT BE USED IN
-PRODUCTION*_.
+provided in the [examples](examples) folder. _*THESE CREDENTIALS MUST NOT BE
+USED IN PRODUCTION*_.
 
 
 # Configuration
