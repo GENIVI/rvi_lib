@@ -86,15 +86,17 @@ If you would like to see an example of an application using `rvi_lib`, run the
 following:
 
     $ make examples
-    $ ./examples/interactive
+    $ cd examples
+    $ ./interactive
 
 Initiating the RVI context requires a configuration file, along with X.509
 certificates and one or more JWT credentials. See the "Configuration" section
-for details on configuring your own.
+for details on configuring your own, or use the "conf.json" file for the
+pre-supplied (*insecure*) configuration.
 
 Insecure configuration details, including private keys and certificates, are
-provided in the [examples](examples) folder. _*THESE CREDENTIALS MUST NOT BE
-USED IN PRODUCTION*_.
+provided in the [examples](examples) folder.
+_*THESE CREDENTIALS MUST NOT BE USED IN PRODUCTION*_.
 
 
 # Configuration
