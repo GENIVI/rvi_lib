@@ -11,6 +11,9 @@ information that crosses trust boundaries.
 [RVI Core](https://github.com/GENIVI/rvi_core), which adds a variety of
 capabilities including server behaviors.
 
+# Documentation
+[GitHub pages](http://genivi.github.io/rvi_lib)
+
 # Standards Used
 
 1. [JSON](http://www.json.org/)
@@ -39,10 +42,6 @@ support interoperability with [RVI Core](https://github.com/GENIVI/rvi_core)
 nodes:
 
 5. [mpack](http://ludocode.github.io/mpack/)
-
-# Documentation
-[GitHub pages](http://genivi.github.io/rvi_lib)
-
 
 # Build Instructions
 
@@ -74,16 +73,6 @@ Build the library using make. After cloning:
     $ cd rvi_lib
     $ make
 
-If you would like to see an example of an application using `rvi_lib`, run the
-following:
-
-    $ make examples
-    $ ./build/bin/interactive
-
-Initiating the RVI context requires a configuration file, along with X.509
-certificates and one or more JWT credentials. See the "Configuration" section
-for details.
-
 #### Install
 To install the library and headers for use in applications or development, run
 the following:
@@ -91,6 +80,22 @@ the following:
     $ make install
 
 This will install both `libjwt` and `librvi` on your development platform.
+
+#### Quick Start
+If you would like to see an example of an application using `rvi_lib`, run the
+following:
+
+    $ make examples
+    $ ./examples/interactive
+
+Initiating the RVI context requires a configuration file, along with X.509
+certificates and one or more JWT credentials. See the "Configuration" section
+for details on configuring your own.
+
+Insecure configuration details, including private keys and certificates, are
+provided in the [examples] folder. _*THESE CREDENTIALS MUST NOT BE USED IN
+PRODUCTION*_.
+
 
 # Configuration
 When used in a calling application (such as the example "interactive" program),
