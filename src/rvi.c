@@ -628,7 +628,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
             /* get value of file position indicator */
             long bufsize = ftell(fp);
             if( bufsize == -1 ) return RVI_ERR_NOCRED;
-            cred = malloc(sizeof(char) * (bufsize + 1));
+            cred = malloc( bufsize + 1 );
             if( !cred ) { err = ENOMEM; goto exit; }
             /* go back to start of file */
             rewind( fp );
@@ -660,7 +660,7 @@ exit:
 int get_credential_rights( rvi_handle handle, const char *cred, 
                            rvi_list *rights )
 {
-    if( !handle || !cred ||  !rights /*!rec_arr || !inv_arr */ )
+    if( !handle || !cred ||  !rights )
         return EINVAL;
 
     rvi_context_p   ctx = (rvi_context_p)handle;
