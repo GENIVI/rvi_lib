@@ -574,7 +574,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
     const char *creddir = json_string_value(
                 json_object_get ( conf, "creddir" ) );
     
-    if( creddir[ strlen( creddir ) ] == '/' ) {
+    if( creddir[ strlen( creddir ) - 1 ] == '/' ) {
         /* If the final character of the directory is a forward slash */
         ctx->creddir = strdup( creddir );
     } else {
