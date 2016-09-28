@@ -24,7 +24,7 @@ SRC :=
 MODLIB :=
 
 LLIBDIR := $(CURDIR)/build/lib
-LBINDIR := $(CURDIR)/build/bin
+LBINDIR := $(CURDIR)/examples
 
 INSTALL_PATH ?= /usr
 
@@ -62,12 +62,11 @@ libs: $(foreach var,$(MODLIB),$(INCLUDE_$(var))) jwt
 
 # Build jwt
 jwt: 
-	git submodule init; git submodule update; cd libjwt; cmake .; make jwt;
+	cd libjwt; INSTALL_PATH=$(INSTALL_PATH) cmake .; make jwt;
 
 # Link the program
 $(TARGET): $(OBJ) libs
 	echo "Building the executable in" $(LBINDIR) "..."; \
-	mkdir -p $(LBINDIR); \
 	$(CC) -o $@ $(OBJ) $(CFLAGS) $(LDFLAGS)  $(LIBS) \
 		$(SHAREDLIBS)
 
@@ -83,4 +82,4 @@ docs: Doxyfile $(INCLUDES)
 	doxygen ./Doxyfile
 
 clean distclean:
-	rm -rf *.o */*.o *~ build docs; cd libjwt; make clean;
+	rm -rf *.o */*.o *~ build docs $(TARGET); cd libjwt; make clean;

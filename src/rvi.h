@@ -114,7 +114,7 @@ typedef enum {
  *          NULL otherwise.
  */
 
-rvi_handle rvi_init(char *config_filename);
+extern rvi_handle rvi_init(char *config_filename);
 
 /** @brief Tear down the API.
  *
@@ -128,7 +128,7 @@ rvi_handle rvi_init(char *config_filename);
  *         error code otherwise.
  */
 
-int rvi_cleanup(rvi_handle handle);
+extern int rvi_cleanup(rvi_handle handle);
 
 // *************************
 // RVI CONNECTION MANAGEMENT
@@ -159,7 +159,7 @@ int rvi_cleanup(rvi_handle handle);
  * @return File descriptor on success,
  *         negative error value otherwise.
  */
-int rvi_connect(rvi_handle handle, const char *addr, const char *port);
+extern int rvi_connect(rvi_handle handle, const char *addr, const char *port);
 
 /** @brief Disconnect from a remote node with a specified file descriptor
  *
@@ -169,7 +169,7 @@ int rvi_connect(rvi_handle handle, const char *addr, const char *port);
  * @return 0 on success,
  *         error code otherwise.
  */
-int rvi_disconnect(rvi_handle handle, int fd);
+extern int rvi_disconnect(rvi_handle handle, int fd);
 
 /** @brief Return all file descriptors in the RVI context
  *
@@ -189,7 +189,7 @@ int rvi_disconnect(rvi_handle handle, int fd);
  * @return 0 on success,
  *         error code otherwise.
  */
-int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size);
+extern int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size);
 
 // **********************
 // RVI SERVICE MANAGEMENT
@@ -218,9 +218,9 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size);
  * @return 0 on success,
  *         error code otherwise.
  */
-int rvi_register_service( rvi_handle handle, const char *service_name, 
-                          rvi_callback_t callback, 
-                          void* service_data, size_t n );
+extern int rvi_register_service( rvi_handle handle, const char *service_name, 
+                                 rvi_callback_t callback, 
+                                 void* service_data, size_t n );
 
 /** @brief Unregister a previously registered service
  *
@@ -238,7 +238,8 @@ int rvi_register_service( rvi_handle handle, const char *service_name,
  * @return 0 on success,
  *         error code otherwise.
  */
-int rvi_unregister_service(rvi_handle handle, const char *service_name);
+extern int rvi_unregister_service( rvi_handle handle, 
+                                   const char *service_name );
 
 /** @brief Get list of services available
  *
@@ -256,7 +257,7 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name);
  * @return 0 on success,
  *         error code otherwise.
  */
-int rvi_get_services(rvi_handle handle, char **result, int* len);
+extern int rvi_get_services( rvi_handle handle, char **result, int* len );
 
 /** @brief Invoke a remote service
  *
@@ -278,8 +279,9 @@ int rvi_get_services(rvi_handle handle, char **result, int* len);
  * @return 0 on success,
  *         error code otherwise.
  */
-int rvi_invoke_remote_service(rvi_handle handle, const char *service_name, 
-                              const char *parameters);
+extern int rvi_invoke_remote_service( rvi_handle handle, 
+                                      const char *service_name, 
+                                      const char *parameters );
 
 
 // ******************
@@ -308,6 +310,6 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
  * @return 0 on success,
  *         error code otherwise.
  */
-int rvi_process_input(rvi_handle handle, int* fd_arr, int fd_len);
+extern int rvi_process_input(rvi_handle handle, int* fd_arr, int fd_len);
 
 #endif /* _RVI_H */

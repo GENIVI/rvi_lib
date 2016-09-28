@@ -255,11 +255,11 @@ rvi_service_t *rvi_service_create ( const char *name, const int registrant,
                                     const void *service_data, size_t n )
 {
     /* If name is NULL or registrant is negative, there's an error */
-    if ( !name || (registrant < 0) )
-        return NULL;
+    if ( !name || (registrant < 0) ) return NULL;
 
     /* Zero-initialize the struct */
     rvi_service_t *service = malloc( sizeof ( rvi_service_t ) );
+    if( !service ) return NULL;
     memset(service, 0, sizeof ( rvi_service_t ) );
 
     /* Set the service name */
@@ -274,6 +274,11 @@ rvi_service_t *rvi_service_create ( const char *name, const int registrant,
     /* Set the data to pass to the callback. NULL is valid */
     if( n ) {
         service->data = malloc( n );
+        if(! service->data ) {
+            free( service->name );
+            free( service );
+            return NULL;
+        }
         memcpy( service->data, service_data, n );
     }
 
@@ -315,6 +320,7 @@ rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd )
     
     /* Create a new data structure and zero-initialize it */
     rvi_remote_t *remote = malloc ( sizeof ( rvi_remote_t ) );
+    if( !remote ) return NULL;
     memset ( remote, 0, sizeof ( rvi_remote_t ) );
 
     /* */
@@ -327,6 +333,10 @@ rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd )
      * right_to_invoke at this time. Those will be populated by parsing the au 
      * message. */
     remote->rights = malloc( sizeof( rvi_list ) );
+    if( !remote->rights ) {
+        free( remote );
+        return NULL;
+    }
     rvi_list_initialize( remote->rights );
 
     return remote;
@@ -362,6 +372,7 @@ rvi_rights_t *rvi_rights_create (   const char *right_to_receive,
 
     rvi_rights_t *new = NULL;
     new = malloc( sizeof( rvi_rights_t ) );
+    if( !new) return NULL;
     new->receive = json_loads( right_to_receive, 0, NULL);
     new->invoke = json_loads( right_to_invoke, 0, NULL);
     new->expiration = validity;
@@ -372,6 +383,8 @@ rvi_rights_t *rvi_rights_create (   const char *right_to_receive,
 /* This function destroys a rights struct and frees all allocated memory */
 void rvi_rights_destroy ( rvi_rights_t *rights ) 
 {
+    if( !rights )
+        return;
     json_decref( rights->receive );
     json_decref( rights->invoke );
     free( rights );
@@ -422,8 +435,7 @@ char *rvi_fqsn_get( rvi_handle handle, const char *service_name )
     if( strncmp( service_name, ctx->id, idlen ) != 0 ) {
         size_t namelen = strlen( service_name );
         fqsn = malloc( namelen + idlen + 2 );
-        if( !fqsn )
-            return NULL;
+        if( !fqsn ) return NULL;
         sprintf( fqsn, "%s/%s", ctx->id, service_name );
     } else {
         fqsn = strdup( service_name );
@@ -580,6 +592,10 @@ int read_json_config ( rvi_handle handle, const char * filename )
     } else {
         /* Otherwise, add a trailing slash */
         ctx->creddir = malloc( strlen( creddir ) + 2 );
+        if(! ctx->creddir ) {
+            err = ENOMEM;
+            goto exit;
+        }
         sprintf( ctx->creddir, "%s/", creddir );
     }
 
@@ -603,10 +619,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
             /* if it's a jwt file, open it */
             path_size = strlen(ctx->creddir) + strlen(dir->d_name) + 1;
             path = malloc(path_size);
-            if(!path) {
-                i++;
-                continue;
-            }
+            if(!path) { err = ENOMEM; goto exit; }
             sprintf(path, "%s%s", ctx->creddir, dir->d_name );
             fp = fopen( path, "r" );
             if( !fp ) return RVI_ERR_NOCRED;
@@ -616,7 +629,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
             long bufsize = ftell(fp);
             if( bufsize == -1 ) return RVI_ERR_NOCRED;
             cred = malloc(sizeof(char) * (bufsize + 1));
-            if( !cred ) return ENOMEM;
+            if( !cred ) { err = ENOMEM; goto exit; }
             /* go back to start of file */
             rewind( fp );
             /* read the entire file into memory */
@@ -722,6 +735,7 @@ int rvi_rrcv_err( rvi_list *rlist, const char *service_name )
     rvi_list_entry *ptr = rlist->listHead;
     while( ptr ) {
         rvi_rights_t *tmp = (rvi_rights_t *)ptr->pointer;
+        if( !tmp ) goto exit;
         json_array_foreach( tmp->receive, index, value ) {
             const char *pattern = json_string_value( value );
             if( ( err = compare_pattern( pattern, service_name ) ) == RVI_OK )
@@ -899,6 +913,7 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
     const char *device_cert = jwt_get_grant( jwt, "device_cert" );
     char *tmp = malloc( strlen( device_cert ) + strlen( certHead ) 
                         + strlen ( certFoot ) + 1 );
+    if( !tmp ) { ret = ENOMEM; goto exit; }
     sprintf(tmp, "%s%s%s", certHead, device_cert, certFoot);
 
     /* Check that certificate in credential matches expected cert */
@@ -929,9 +944,6 @@ exit:
 
 rvi_handle rvi_init ( char *config_filename )
 {
-    /* set alloc funcs for Jansson */
-    /* json_set_alloc_funcs(s_malloc, s_free); */
-
     /* initialize OpenSSL */
     SSL_library_init();
     SSL_load_error_strings();
@@ -952,9 +964,14 @@ rvi_handle rvi_init ( char *config_filename )
     /* Allocate a block of memory for storing credentials, then initialize each 
      * pointer to null */
     ctx->creds = malloc( sizeof( rvi_list ) );
-    rvi_list_initialize( ctx->creds );
-
     ctx->rights = malloc( sizeof( rvi_list ) );
+
+    if( !ctx->creds || !ctx->rights ) {
+        fprintf(stderr, "Unable to allocate memory\n");
+        return NULL;
+    }
+
+    rvi_list_initialize( ctx->creds );
     rvi_list_initialize( ctx->rights );
     
     if ( read_json_config ( ctx, config_filename ) != 0 ) {
@@ -1528,8 +1545,14 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
         rkey.fd = fd_arr[i]; /* Set the key to the requested fd */
         i++;
         rtmp = btree_search( ctx->remote_idx, &rkey ); /* Find the connection */
+        if( !rtmp ) {
+            err = ENXIO;
+            printf( "No connection on %d\n", rkey.fd );
+            continue;
+        }
         BIO_get_ssl( rtmp->sbio, &ssl );
         if( !ssl ) {
+            err = RVI_ERR_OPENSSL;
             printf( "Error reading on fd %d, try again\n", rtmp->fd );
             continue;
         }
@@ -1566,6 +1589,9 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
             goto exit;
         }
 
+        /* Set the mode back to its original bitmask */
+        SSL_set_mode( ssl, mode );
+
         /* We no longer need the string we received */
         memset( buf, 0, len );
 
@@ -1574,8 +1600,6 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
         
     free( buf );
 
-    /* Set the mode back to its original bitmask */
-    SSL_set_mode( ssl, mode );
 
 exit:
     return err;
