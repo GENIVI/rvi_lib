@@ -30,3 +30,10 @@
 
 # Debug files
 *.dSYM/
+
+# Private configuration files
+examples/priv/*
+
+# Build artifacts
+build/*
+tmp/*

@@ -5,31 +5,43 @@
  * file, you can obtain one at http://mozilla.org/MPL/2.0.
  */
 
+#ifndef _RVI_H
+#define _RVI_H
+
+#include <stddef.h>
+
 /** @file rvi.h
- * @brief API for the Remote Vehicle Interaction library.
+ * @brief Remote Vehicle Interaction library.
  *
  * This file is responsible for exposing all available function prototypes and
  * data types for the RVI library.
  *
  * This is an initial prototype of the RVI library in C and is subject to
- * change. The intended use is to allow a calling application to connect to a
- * remote RVI node, discover services, register additional services, and invoke
- * remote services.
+ * change. The intended use is to allow a calling application to connect to
+ * remote RVI nodes, discover services, register additional services, and
+ * invoke remote services.
+ *
  *
  * The RVI library depends on the following libraries:
  *
+ * C standard library: https://www-s.acm.illinois.edu/webmonkeys/book/c_guide/index.html
+ *
  * libJWT: https://github.com/benmcollins/libjwt/
+ *
  * Jansson: http://www.digip.org/jansson/
+ *
  * OpenSSL: https://www.openssl.org/
+ *
+ *
+ * The RVI library does not currently use the following, but may include it for
+ * future interopability with RVI Core nodes:
+ *
  * mpack: http://ludocode.github.io/mpack/
+ *
+ *
  *
  * @author Tatiana Jamison &lt;tjamison@jaguarlandrover.com&gt;
  */
-
-#ifndef _RVI_H
-#define _RVI_H
-
-#include <jansson.h>
 
 // **********
 // DATA TYPES
@@ -39,21 +51,35 @@
 typedef void *rvi_handle;
 
 /** Function signature for RVI callback functions */
-typedef void (*rvi_callback_t) (int fd, void* service_data, json_t *);
+typedef void (*rvi_callback_t) ( int fd, 
+                                 void* service_data, 
+                                 const char *parameters
+                               );
 
 /** Function return status codes */
 typedef enum {
-    RVI_OK                  = 0,    /* Success */
-    RVI_WANT_READ           = 1,    /* Retry read operation */ 
-    RVI_WANT_WRITE          = 2,    /* Retry write operation */
-    RVI_ERROR_OPENSSL       = 100,  /* Unhandled error from OpenSSL */
-    RVI_ERROR_NOCONFIG      = 1001, /* Configuration error */
-    RVI_ERROR_JSON          = 1002, /* Error in JSON */
-    RVI_ERROR_SERVCERT      = 1003, /* Server certificate is missing */
-    RVI_ERROR_CLIENTCERT    = 1004, /* Client certificate is missing */
-    RVI_ERROR_NORCVCERT     = 1005, /* Client did not receive server cert */
-    RVI_ERROR_STREAMEND     = 1006, /* Stream end encountered unexpectedly */
-    RVI_ERROR_NOCRED        = 1007, /* No credentials */
+    /** Success */
+    RVI_OK                  = 0,    
+    /** Unhandled error from OpenSSL */
+    RVI_ERR_OPENSSL         = 100,  
+    /** Configuration error */
+    RVI_ERR_NOCONFIG        = 1001, 
+    /** Error in JSON */
+    RVI_ERR_JSON            = 1002, 
+    /** Server certificate is missing */
+    RVI_ERR_SERVCERT        = 1003, 
+    /** Client certificate is missing */
+    RVI_ERR_CLIENTCERT      = 1004, 
+    /** Client did not receive server cert */
+    RVI_ERR_NORCVCERT       = 1005, 
+    /** Stream end encountered unexpectedly */
+    RVI_ERR_STREAMEND       = 1006, 
+    /** No credentials */
+    RVI_ERR_NOCRED          = 1007, 
+    /** No (known) command */
+    RVI_ERR_NOCMD           = 1008, 
+    /** No right for that operation */
+    RVI_ERR_RIGHTS          = 1009 
 } rvi_status;
 
 // ***************************
@@ -62,61 +88,88 @@ typedef enum {
 
 /** @brief Initialize the RVI library. Call before using any other functions.
  *
- * @param config_filename - Path to the file containing RVI config options:
- *                          credentials - JWT encoded string
- *                          device_cert - file with device's X.509 cert
- *                          device_key - file with device's private key
- *                          intermediateCA - file with intermediate CA certs
- *                          root_cert - file with root cert
+ * The name of a JSON configuration file must be supplied. Example config:
  *
- * @return A handle for the API. On failure, a NULL pointer will be returned.
+ *      {
+ *       "dev": {
+ *           "key":  "./priv/clientkey.pem",
+ *           "cert": "./priv/clientcert.pem",
+ *           "id":   "genivi.org/client/bbfbb478-d628-480a-8528-cff40d73678f"
+ *       },
+ *       "ca": {
+ *           "cert": "./priv/cacert.pem",
+ *           "dir":  "./priv/"
+ *       },
+ *       "creddir": "./priv/"
+ *      }
+ *
+ * Notably, the device ID should be a unique ID generated from an external
+ * source, e.g., util-linux's uuidgen or Microsoft's guidgen.exe.
+ *
+ * The ID format is "domain/device-type/uuid".
+ *
+ * @param config_filename - Path to the file containing RVI config options.
+ *
+ * @return  A handle for the API on success, 
+ *          NULL otherwise.
  */
 
-rvi_handle rvi_init(char *config_filename);
+extern rvi_handle rvi_init(char *config_filename);
 
 /** @brief Tear down the API.
  *
  * Calling applications are expected to call this to cleanly tear down the API.
+ * This will disconnect from all active connections and free memory allocated
+ * by the library.
  *
  * @param handle - The handle for the RVI context to clean up.
  *
- * @return 0 (RVI_OK) on success
- *         Error code on failure.
+ * @return 0 on success,
+ *         error code otherwise.
  */
 
-int rvi_cleanup(rvi_handle handle);
+extern int rvi_cleanup(rvi_handle handle);
 
 // *************************
 // RVI CONNECTION MANAGEMENT
 // *************************
 
 /** @brief Connect to a remote node at a specified address and port. 
+ * 
+ * This function will attempt to connect to a remote node at the specified addr
+ * and port. It will spawn a new connection and block until all handshake and
+ * RVI negotiations are complete. On success, it will return the file
+ * descriptor for the new socket. On failure, it will return a negative error
+ * value. 
  *
- * @param handle - The handle to the RVI context.
- * @param addr - The address of the remote connection.
- * @param port - The target port for the connection. This can be a numeric
- *               value or a string such as "http." Allowed values (inherited
- *               from OpenSSL) are http, telnet, socks, https, ssl, ftp, and
- *               gopher.
+ * New services may become immediately available upon connecting to a remote
+ * node. To discover the services that are currently available, use the
+ * rvi_get_services() function. Services may be invoked via
+ * rvi_invoke_remote_service() using the fully-qualified service name.
  *
- * @return A file descriptor for the new socket on success.
- *         A negative error value on failure.
+ * This operation will block until all TLS read/write operations are complete.
+ *
+ * @param handle    - The handle to the RVI context.
+ * @param addr      - The address of the remote connection.
+ * @param port      - The target port for the connection. This can be a
+ *                        numeric value or a string such as "http." Allowed
+ *                        values (inherited from OpenSSL) are http, telnet,
+ *                        socks, https, ssl, ftp, and gopher.
+ *
+ * @return File descriptor on success,
+ *         negative error value otherwise.
  */
-int rvi_connect(rvi_handle handle, const char *addr, const char *port);
+extern int rvi_connect(rvi_handle handle, const char *addr, const char *port);
 
-/** @brief Unload a file descriptor from the RVI context
+/** @brief Disconnect from a remote node with a specified file descriptor
  *
- * @param handle - The handle to the RVI context.
- * @param fd - The file descriptor to be unloaded.
+ * @param handle    - The handle to the RVI context.
+ * @param fd        - The file descriptor for the connection to terminate.
  *
- * @return 0 (RVI_OK)  on success.
- *         Error code on failure.
+ * @return 0 on success,
+ *         error code otherwise.
  */
-int rvi_disconnect(rvi_handle handle, int fd);
-
-// Separate call to disconnect multiple file descriptors:
-// int rvi_disconnect_multiple(rvi_handle handle, int* fd, int fd_len);
-
+extern int rvi_disconnect(rvi_handle handle, int fd);
 
 /** @brief Return all file descriptors in the RVI context
  *
@@ -126,15 +179,17 @@ int rvi_disconnect(rvi_handle handle, int fd);
  * @param conn_size - Pointer to size of 'conn' buffer. This should be
  *                    initialized to the size of the conn buffer. On success,
  *                    it will be updated with the number of file descriptors
- *                    updated.
+ *                    returned.
  *
  * This function will fill the conn buffer with active file descriptors from
  * the RVI context and update conn_size to indicate the final size.
  *
- * @return 0 (RVI_OK) on success.
- *         Error code on failure.
+ * This operation is entirely local.
+ *
+ * @return 0 on success,
+ *         error code otherwise.
  */
-int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size);
+extern int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size);
 
 // **********************
 // RVI SERVICE MANAGEMENT
@@ -142,18 +197,30 @@ int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size);
 
 /** @brief Register a service with a callback function
  *
- * @param handle - The handle to the RVI context.
- * @param service_name - The fully-qualified service name to register
- * @param callback - The callback function to be executed upon service
- *                   invocation.
- * @param service_data - Parameters to be passed to the callback function (in
- *                       addition to any JSON parameters from the remote node)
+ * This function makes services available to remote RVI nodes that are
+ * currently connected to this node. The service may be a fully-qualified
+ * service-name or a relative service name. If the service name is not prefixed
+ * with this node's identifier (as specified in the configuration file), it
+ * will automatically be added.
  *
- * @return 0 (RVI_OK) on success 
- *         Error code on failure.
+ * This will also notify all remote nodes that can invoke the service, based on
+ * credentials presented to this node. The operation will block until all SSL
+ * read/write operations are complete.
+ *
+ * @param handle        - The handle to the RVI context.
+ * @param service_name  - The service name to register
+ * @param callback      - The callback function to be executed upon service
+ *                        invocation.
+ * @param service_data  - Parameters to be passed to the callback function (in
+ *                        addition to any JSON parameters from the remote node)
+ * @param n             - Size of service_data
+ *
+ * @return 0 on success,
+ *         error code otherwise.
  */
-int rvi_register_service(rvi_handle handle, const char *service_name, 
-                         rvi_callback_t callback, void* service_data);
+extern int rvi_register_service( rvi_handle handle, const char *service_name, 
+                                 rvi_callback_t callback, 
+                                 void* service_data, size_t n );
 
 /** @brief Unregister a previously registered service
  *
@@ -161,13 +228,18 @@ int rvi_register_service(rvi_handle handle, const char *service_name,
  * calling application. If service_name does not exist, or was registered by a
  * remote node, it does nothing and returns an error code.
  *
+ * This will also notify all remote nodes that could have invoked the service,
+ * based on credentials presented to this node. The operation will block until
+ * all SSL read/write operations are complete.
+ *
  * @param handle - The handle to the RVI context
  * @param service_name The fully-qualified service name to deregister
  *
- * @return 0 (RVI_OK) on success. 
- *         Error code on failure.
+ * @return 0 on success,
+ *         error code otherwise.
  */
-int rvi_unregister_service(rvi_handle handle, const char *service_name);
+extern int rvi_unregister_service( rvi_handle handle, 
+                                   const char *service_name );
 
 /** @brief Get list of services available
  *
@@ -175,36 +247,41 @@ int rvi_unregister_service(rvi_handle handle, const char *service_name);
  * value indicated by len. Memory for each string is dynamically allocated by
  * the library and must be freed by the calling application. Before returning,
  * len is updated with the actual number of strings.
+ *
+ * This operation is entirely local.
  * 
  * @param handle - The handle to the RVI context.
  * @param result - A pointer to a block of pointers for storing strings
  * @param len - The maximum number of pointers allocated in result
  *
- * @return 0 (RVI_OK) on success
- *         Error code on failure.
+ * @return 0 on success,
+ *         error code otherwise.
  */
-int rvi_get_services(rvi_handle handle, char **result, int* len);
-// Use strdup() to duplicate string:
-// char *caller_res[10];
-// int result_len = 0;
-// get_services(handle, caller_res, 10, &result_len);
-// // Inside the library
-// for(i=0; i < service_array_len; ++i) {
-//   char* svc_name = get_service_by_index(i);
-//   *result = strdup(svc_name); // strdup() does the malloc
-//   *result++;
-// }
+extern int rvi_get_services( rvi_handle handle, char **result, int* len );
 
 /** @brief Invoke a remote service
+ *
+ * The service name must be the fully-qualified service name (as returned by,
+ * e.g., rvi_get_services()). The service may be passed parameters in the form
+ * of a JSON object containing key-value pairs. Parameters are optional.
+ *
+ * Introspection of RVI services is not supported as of the 0.5.0 release, so
+ * refer to the documentation on the services you intend to invoke to determine
+ * which parameters (if any) to pass.
+ *
+ * This will send the RVI command over TLS to the remote node. The operation
+ * will block until all SSL read/write operations are complete.
  *
  * @param handle - The handle to the RVI context.
  * @param service_name - The fully-qualified service name to invoke 
  * @param parameters - A JSON structure containing the named parameter pairs
  *
- * @return 0 on success. Error code on failure.
+ * @return 0 on success,
+ *         error code otherwise.
  */
-int rvi_invoke_remote_service(rvi_handle handle, const char *service_name, 
-                              const json_t *parameters);
+extern int rvi_invoke_remote_service( rvi_handle handle, 
+                                      const char *service_name, 
+                                      const char *parameters );
 
 
 // ******************
@@ -218,6 +295,10 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
  * populated only with read-ready descriptors (returned by, e.g., (e)poll() or
  * select()).
  *
+ * This operation will read one message from each file descriptor provided. The
+ * calling application should poll using a level trigger, since multiple
+ * messages may be pending on a single connection.
+ *
  * This is a blocking operation. If any descriptor in fd_arr is not read-ready,
  * the operation will block until data becomes available to read on the
  * descriptor.
@@ -226,9 +307,9 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
  * @param fd_arr - An array of file descriptors with read operations pending
  * @param fd_len - The length of the file descriptor array
  *
- * @return 0 (RVI_OK) on success.
- *         Error code on failure.
+ * @return 0 on success,
+ *         error code otherwise.
  */
-int rvi_process_input(rvi_handle handle, int* fd_arr, int fd_len);
+extern int rvi_process_input(rvi_handle handle, int* fd_arr, int fd_len);
 
 #endif /* _RVI_H */

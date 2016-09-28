@@ -1165,7 +1165,7 @@ del_loop:
         //
         //  Decrement the number of records in the btree.
         //
-//        --btree->count;
+        --btree->count;
 
         return 0;
     }
@@ -1253,6 +1253,12 @@ del_loop:
         nodePosition.node = node;
         nodePosition.index = index;
         delete_key_from_node ( btree, &nodePosition );
+
+        //
+        //  Decrement the number of records in the btree.
+        //
+        --btree->count;
+
     }
     //
     //  All done so return to the caller.

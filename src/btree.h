@@ -254,7 +254,7 @@ extern void btree_iter_cleanup ( btree_iter iter );
 static inline unsigned int getCount ( btree_t* btree )
 {
     return btree->count;
-};
+}
 
 
 static inline bt_node_t* getLeftChild ( bt_node_t* node, unsigned int index )
