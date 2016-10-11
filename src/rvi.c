@@ -314,18 +314,14 @@ void rvi_service_destroy ( rvi_service_t *service )
 rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd )
 {
     /* If sbio is null or fd is negative, there's a problem */
-    if ( !sbio || fd < 0 ) {
-        return NULL;
-    }
+    if ( !sbio || fd < 0 ) return NULL;
     
     /* Create a new data structure and zero-initialize it */
     rvi_remote_t *remote = malloc ( sizeof ( rvi_remote_t ) );
     if( !remote ) return NULL;
     memset ( remote, 0, sizeof ( rvi_remote_t ) );
 
-    /* */
     /* Set the file descriptor and BIO chain */
-    /* */
     remote->fd = fd;
     remote->sbio = sbio;
 
@@ -475,9 +471,7 @@ int ssl_verify_callback ( int ok, X509_STORE_CTX *store )
  */
 SSL_CTX *setup_client_ctx ( rvi_handle handle )
 {
-    if ( !handle ) {
-        return NULL;
-    }
+    if ( !handle ) return NULL;
 
     rvi_context_t *rvi_ctx = (rvi_context_t *)handle;
 
@@ -1494,7 +1488,7 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
                     "parameters", params
             );
     if( ! rcv ) {
-        printf("JSON error\n");
+        fprintf(stderr, "JSON error\n");
         ret = RVI_ERR_JSON;
         goto exit;
     }
@@ -1547,13 +1541,13 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
         rtmp = btree_search( ctx->remote_idx, &rkey ); /* Find the connection */
         if( !rtmp ) {
             err = ENXIO;
-            printf( "No connection on %d\n", rkey.fd );
+            fprintf( stderr, "No connection on %d\n", rkey.fd );
             continue;
         }
         BIO_get_ssl( rtmp->sbio, &ssl );
         if( !ssl ) {
             err = RVI_ERR_OPENSSL;
-            printf( "Error reading on fd %d, try again\n", rtmp->fd );
+            fprintf( stderr, "Error reading on fd %d, try again\n", rtmp->fd );
             continue;
         }
         /* Grab the current mode flags from the session */
