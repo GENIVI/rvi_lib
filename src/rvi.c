@@ -926,7 +926,7 @@ rvi_handle rvi_init ( char *config_filename )
         goto err;
     }
 
-    if ( !(ctx->creds->count) || !(ctx->rights->count) ) {
+    if ( !(ctx->creds->count) ) {
         fprintf(stderr, "Error: no rights available\n");
         goto err;
     }
@@ -938,6 +938,11 @@ rvi_handle rvi_init ( char *config_filename )
         if( ret != RVI_OK )
             goto err;
         ptr = ptr->next;
+    }
+
+    if ( !(ctx->rights->count) ) {
+        fprintf(stderr, "Error: no rights available\n");
+        goto err;
     }
 
     /* Create generic SSL context configured for client access */
