@@ -293,9 +293,7 @@ rvi_service_t *rvi_service_create ( const char *name, const int registrant,
  */
 void rvi_service_destroy ( rvi_service_t *service )
 {
-     if ( !service ) {
-         return;
-     }
+     if ( !service ) { return; }
 
      if( service->data )
          free ( service->data );
@@ -314,18 +312,14 @@ void rvi_service_destroy ( rvi_service_t *service )
 rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd )
 {
     /* If sbio is null or fd is negative, there's a problem */
-    if ( !sbio || fd < 0 ) {
-        return NULL;
-    }
+    if ( !sbio || fd < 0 ) return NULL;
     
     /* Create a new data structure and zero-initialize it */
     rvi_remote_t *remote = malloc ( sizeof ( rvi_remote_t ) );
     if( !remote ) return NULL;
     memset ( remote, 0, sizeof ( rvi_remote_t ) );
 
-    /* */
     /* Set the file descriptor and BIO chain */
-    /* */
     remote->fd = fd;
     remote->sbio = sbio;
 
@@ -349,9 +343,7 @@ rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd )
  */
 void rvi_remote_destroy ( rvi_remote_t *remote)
 {
-    if ( !remote ) {
-        return;
-    }
+    if ( !remote ) { return; }
 
     rvi_rights_ldestroy( remote->rights );
 
@@ -383,8 +375,7 @@ rvi_rights_t *rvi_rights_create (   const char *right_to_receive,
 /* This function destroys a rights struct and frees all allocated memory */
 void rvi_rights_destroy ( rvi_rights_t *rights ) 
 {
-    if( !rights )
-        return;
+    if( !rights ) { return; }
     json_decref( rights->receive );
     json_decref( rights->invoke );
     free( rights );
@@ -394,6 +385,7 @@ void rvi_rights_destroy ( rvi_rights_t *rights )
  * allocated memory */
 void rvi_rights_ldestroy ( rvi_list *list )
 {
+    if( !list ) { return; }
     rvi_list_entry *ptr = list->listHead;
     rvi_list_entry *tmp;
     rvi_rights_t *rights = NULL;
@@ -409,6 +401,7 @@ void rvi_rights_ldestroy ( rvi_list *list )
 
 void rvi_creds_ldestroy ( rvi_list *list )
 {
+    if( !list ) { return; }
     rvi_list_entry *ptr = list->listHead;
     rvi_list_entry *tmp;
     while( ptr ) {
@@ -475,9 +468,7 @@ int ssl_verify_callback ( int ok, X509_STORE_CTX *store )
  */
 SSL_CTX *setup_client_ctx ( rvi_handle handle )
 {
-    if ( !handle ) {
-        return NULL;
-    }
+    if ( !handle ) return NULL;
 
     rvi_context_t *rvi_ctx = (rvi_context_t *)handle;
 
@@ -559,10 +550,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
     char            *cred       = NULL;
 
     conf = json_load_file( filename, 0, &errjson );
-    if( !conf ) {
-        err = RVI_ERR_JSON;
-        goto exit;
-    }
+    if( !conf ) { err = RVI_ERR_JSON; goto exit; }
 
     tmp = json_object_get( conf, "dev" );
     if(!tmp) { err = RVI_ERR_JSON; goto exit; }
@@ -592,10 +580,7 @@ int read_json_config ( rvi_handle handle, const char * filename )
     } else {
         /* Otherwise, add a trailing slash */
         ctx->creddir = malloc( strlen( creddir ) + 2 );
-        if(! ctx->creddir ) {
-            err = ENOMEM;
-            goto exit;
-        }
+        if(! ctx->creddir ) { err = ENOMEM; goto exit; }
         sprintf( ctx->creddir, "%s/", creddir );
     }
 
@@ -669,21 +654,15 @@ int get_credential_rights( rvi_handle handle, const char *cred,
     int             ret;
     time_t          rawtime;
 
-    if( !( key = get_pubkey_file( ctx->cafile ) ) ) {
-        ret = -1;
-        goto exit;
-    }
+    key = get_pubkey_file( ctx->cafile );
+    if( !key  ){ ret = -1; goto exit; }
 
     /* Load the JWT into memory from base64-encoded string */
     ret = jwt_decode(&jwt, cred, (unsigned char *)key, strlen(key));
-    if( ret != 0 )
-        goto exit;
+    if( ret != 0 ) { goto exit; }
 
     /* Check that we are using public/private key cryptography */
-    if( jwt_get_alg( jwt ) != JWT_ALG_RS256 ) {
-        ret = 1; 
-        goto exit;
-    }
+    if( jwt_get_alg( jwt ) != JWT_ALG_RS256 ) { ret = 1; goto exit; }
     
     /* Check validity: start/stop */
     time(&rawtime);
@@ -693,10 +672,7 @@ int get_credential_rights( rvi_handle handle, const char *cred,
     int start = json_integer_value( json_object_get( validity, "start" ) );
     int stop = json_integer_value( json_object_get( validity, "stop" ) );
 
-    if( ( start > rawtime ) || ( stop < rawtime ) ) {
-        ret = -1;
-        goto exit;
-    }
+    if( ( start > rawtime ) || ( stop < rawtime ) ) { ret = -1; goto exit; }
     
     /* Load the rights to receive */
     char *rcv = (char *)jwt_get_grant( jwt, "right_to_receive" );
@@ -710,9 +686,6 @@ int get_credential_rights( rvi_handle handle, const char *cred,
     free( rcv );
 
     free( inv );
-
-    if (ret != 0) 
-        goto exit;
 
 exit:
     free(key);
@@ -750,8 +723,7 @@ exit:
 
 int rvi_rinv_err( rvi_list *rlist, const char *service_name )
 {
-    if( !rlist || !service_name )
-        return EINVAL;
+    if( !rlist || !service_name ) { return EINVAL; }
 
     int     err     = -1; /* By default, assume no rights */
     json_t  *value  = NULL;
@@ -776,8 +748,7 @@ exit:
 /** Get the public key from a certificate file */
 char *get_pubkey_file( char *filename )
 {
-    if( !filename )
-        return NULL;
+    if( !filename ) { return NULL; }
 
     EVP_PKEY    *pkey       = NULL;
     BIO         *certbio    = NULL;
@@ -786,46 +757,33 @@ char *get_pubkey_file( char *filename )
     char        *key;
     long        length;
     int         ret = RVI_OK;
+    int         ok = 0; /* Status for OpenSSL calls */
 
     /* Get public key from root certificate */
     /* First, load PEM string into memory */
-    if( !( certbio = BIO_new_file( filename, "r" ) ) ) {
-        ret = ENOMEM; 
-        goto exit;
-    }
+    certbio = BIO_new_file( filename, "r" );
+    if( !certbio ) { ret = ENOMEM; goto exit; }
     /* Then read the certificate from the string */
-    if( !( cert = PEM_read_bio_X509( certbio, NULL, 0, NULL ) ) ) {
-        ret = 1; 
-        goto exit; 
-    } 
+    cert = PEM_read_bio_X509( certbio, NULL, 0, NULL );
+    if( !cert ) { ret = 1; goto exit; } 
     /* Get the public key from the certificate */
-    if( !( pkey = X509_get_pubkey(cert) ) ) {
-        ret = 1; 
-        goto exit;
-    }
+    pkey = X509_get_pubkey(cert); 
+    if( !pkey ) { ret = 1; goto exit; }
     /* Make a new memory BIO */
-    if( !( mbio = BIO_new(BIO_s_mem() ) ) ) {
-        ret = ENOMEM;
-        goto exit;
-    }
+    mbio = BIO_new( BIO_s_mem() ); 
+    if( !mbio ) { ret = ENOMEM; goto exit; }
     /* Write the pubkey to the new BIO as a PEM-formatted string */
-    ret = PEM_write_bio_PUBKEY(mbio, pkey);
+    ok = PEM_write_bio_PUBKEY(mbio, pkey);
+    if( !ok ) { ret = RVI_ERR_OPENSSL; goto exit; }
 
-    if( ret == 0 ) {
-        ret = RVI_ERR_OPENSSL;
-        goto exit;
-    }
     /* Find out how long our new string is */
     length = BIO_ctrl_pending(mbio);
     /* Allocate a buffer for the key string... */
-    if( !( key = malloc( length + 1 ) ) ) {
-        ret = ENOMEM;
-        goto exit;
-    }
+    key = malloc( length + 1 );
+    if( !key ) { ret = ENOMEM; goto exit; }
     /* Load the string into memory */
-    if( (ret = BIO_read(mbio, key, length)) != length) {
-        goto exit;
-    }
+    ret = BIO_read(mbio, key, length);
+    if( ret != length) { goto exit; }
     /* Make sure it's null-formatted, just in case */
     key[length] = '\0';
 
@@ -879,23 +837,18 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
     /* Get the public key from the trusted CA */
     key = get_pubkey_file( ctx->cafile );
 
-    if( !key ) {
-        ret = -1;
-        goto exit;
-    }
+    if( !key ) { ret = -1; goto exit; }
 
     length = strlen(key) + 1;
 
     /* If token does not pass sig check, libjwt supplies errno */
-    if( ( ret = jwt_decode( &jwt, cred, (unsigned char *)key, length ) ) ) {
+    ret = jwt_decode( &jwt, cred, (unsigned char *)key, length );
+    if( ret ) {
         goto exit;
     }
 
     /* RVI credentials use RS256 */
-    if( jwt_get_alg( jwt ) != JWT_ALG_RS256 ) {
-        ret = 1; 
-        goto exit;
-    }
+    if( jwt_get_alg( jwt ) != JWT_ALG_RS256 ) { ret = 1; goto exit; }
 
     /* Check validity: start/stop */
     time(&rawtime);
@@ -905,10 +858,7 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
     int start = json_integer_value( json_object_get( validity, "start" ) );
     int stop = json_integer_value( json_object_get( validity, "stop" ) );
 
-    if( ( start > rawtime ) || ( stop < rawtime ) ) {
-        ret = -1;
-        goto exit;
-    }
+    if( ( start > rawtime ) || ( stop < rawtime ) ) { ret = -1; goto exit; }
 
     const char *device_cert = jwt_get_grant( jwt, "device_cert" );
     char *tmp = malloc( strlen( device_cert ) + strlen( certHead ) 
@@ -920,10 +870,7 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
     bio = BIO_new( BIO_s_mem() );
     BIO_puts( bio, (const char *)tmp );
     dcert = PEM_read_bio_X509( bio, NULL, 0, NULL );
-    if( !dcert ) {
-        ret = RVI_ERR_OPENSSL;
-        goto exit;
-    }
+    if( !dcert ) { ret = RVI_ERR_OPENSSL; goto exit; }
     ret = X509_cmp( dcert, cert );
 
 exit:
@@ -976,6 +923,11 @@ rvi_handle rvi_init ( char *config_filename )
     
     if ( read_json_config ( ctx, config_filename ) != 0 ) {
         fprintf(stderr, "Error reading config file\n");
+        goto err;
+    }
+
+    if ( !(ctx->creds->count) || !(ctx->rights->count) ) {
+        fprintf(stderr, "Error: no rights available\n");
         goto err;
     }
 
@@ -1494,7 +1446,7 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
                     "parameters", params
             );
     if( ! rcv ) {
-        printf("JSON error\n");
+        fprintf(stderr, "JSON error\n");
         ret = RVI_ERR_JSON;
         goto exit;
     }
@@ -1547,13 +1499,13 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
         rtmp = btree_search( ctx->remote_idx, &rkey ); /* Find the connection */
         if( !rtmp ) {
             err = ENXIO;
-            printf( "No connection on %d\n", rkey.fd );
+            fprintf( stderr, "No connection on %d\n", rkey.fd );
             continue;
         }
         BIO_get_ssl( rtmp->sbio, &ssl );
         if( !ssl ) {
             err = RVI_ERR_OPENSSL;
-            printf( "Error reading on fd %d, try again\n", rtmp->fd );
+            fprintf( stderr, "Error reading on fd %d, try again\n", rtmp->fd );
             continue;
         }
         /* Grab the current mode flags from the session */

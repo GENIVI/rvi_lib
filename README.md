@@ -104,10 +104,12 @@ certificates and one or more JWT credentials. See the "Configuration" section
 for details on configuring your own, or use the "conf.json" file for the
 pre-supplied (*insecure*) configuration.
 
+Connect to a remote test RVI node at 38.129.64.41, port 9010. You can register
+services, invoke remote services, and process incoming messages.
+
 Insecure configuration details, including private keys and certificates, are
 provided in the [examples](examples) folder.
 _*THESE CREDENTIALS MUST NOT BE USED IN PRODUCTION*_.
-
 
 # Configuration
 When used in a calling application (such as the example "interactive" program),
