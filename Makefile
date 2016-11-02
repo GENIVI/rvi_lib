@@ -14,7 +14,8 @@ MODULES = src examples
 
 # Look for include files in each of the modules 
 CFLAGS += $(patsubst %,-I%, $(MODULES)) \
-		  -fPIC -g -Wall -std=gnu99
+		  -fPIC -g -Wall -Wformat -Wformat-security -Wformat-nonliteral \
+		  -Wformat=2 -std=gnu99
 
 #MAKEFLAGS += j
 
@@ -53,16 +54,12 @@ examples: $(TARGET)
 
 .SILENT:
 # Build the shared libraries
-libs: $(foreach var,$(MODLIB),$(INCLUDE_$(var))) jwt
+libs: $(foreach var,$(MODLIB),$(INCLUDE_$(var))) 
 	echo "Building library in" $(LLIBDIR) "..."; \
 	mkdir -p $(LLIBDIR); \
 	$(foreach var,$(MODLIB),$(CC) $(CFLAGS) -shared \
 		-o $(LLIBDIR)/lib$(var).so $(INCLUDE_$(var)) \
 		$(LDFLAGS) $(LIBS_$(var));)
-
-# Build jwt
-jwt: 
-	cd libjwt; INSTALL_PATH=$(INSTALL_PATH) cmake .; make jwt;
 
 # Link the program
 $(TARGET): $(OBJ) libs
@@ -70,8 +67,7 @@ $(TARGET): $(OBJ) libs
 	$(CC) -o $@ $(OBJ) $(CFLAGS) $(LDFLAGS)  $(LIBS) \
 		$(SHAREDLIBS)
 
-install: jwt libs 
-	cd libjwt; make install; cd ..; \
+install: libs 
 		echo -- Installing: $(INSTALL_PATH)/lib/librvi.so;\
 		cp $(LLIBDIR)/librvi.so $(INSTALL_PATH)/lib;\
 		echo -- Installing: $(INSTALL_PATH)/include/rvi.h;\
@@ -82,4 +78,4 @@ docs: Doxyfile $(INCLUDES)
 	doxygen ./Doxyfile
 
 clean distclean:
-	rm -rf *.o */*.o *~ build docs $(TARGET); cd libjwt; make clean;
+	rm -rf *.o */*.o *~ build docs $(TARGET)

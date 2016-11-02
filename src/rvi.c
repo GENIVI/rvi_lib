@@ -139,6 +139,8 @@ SSL_CTX *setup_client_ctx ( rvi_handle handle );
 
 int read_json_config ( rvi_handle handle, const char * filename );
 
+json_t *get_json_grant ( jwt_t *jwt, const char *grant );
+
 char *get_pubkey_file( char *filename );
 
 int validate_credential( rvi_handle handle, const char *cred, X509 *cert );
@@ -641,6 +643,32 @@ exit:
     return err;
 }
 
+json_t *get_json_grant ( jwt_t *jwt, const char *grant )
+{
+    if( !jwt || !grant || !strlen(grant) ) { return NULL; }
+
+    /* get token in plaintext */
+    char *plaintext = jwt_dump_str( jwt, 0 );
+
+    /* store pointer to free memory */
+    char *start = plaintext;
+
+    /* advance past header */
+    while( *plaintext++ != '.');
+
+    json_t *body = json_loads( plaintext, JSON_REJECT_DUPLICATES, NULL );
+
+    free( start );
+
+    json_t *claim = json_object_get( body, grant );
+
+    json_t *new = json_deep_copy( claim );
+
+    json_decref( body );
+
+    return new;
+}
+
 /** Get arrays of right_to_receive and right_to_invoke */
 int get_credential_rights( rvi_handle handle, const char *cred, 
                            rvi_list *rights )
@@ -666,8 +694,7 @@ int get_credential_rights( rvi_handle handle, const char *cred,
     
     /* Check validity: start/stop */
     time(&rawtime);
-    char *validity_str = (char *)jwt_get_grant( jwt, "validity" );
-    json_t *validity = json_loads(validity_str, 0, NULL);
+    json_t *validity = get_json_grant( jwt, "validity" );
 
     int start = json_integer_value( json_object_get( validity, "start" ) );
     int stop = json_integer_value( json_object_get( validity, "stop" ) );
@@ -675,9 +702,13 @@ int get_credential_rights( rvi_handle handle, const char *cred,
     if( ( start > rawtime ) || ( stop < rawtime ) ) { ret = -1; goto exit; }
     
     /* Load the rights to receive */
-    char *rcv = (char *)jwt_get_grant( jwt, "right_to_receive" );
+    json_t *receive = get_json_grant( jwt, "right_to_receive" );
+    char *rcv = json_dumps(receive, JSON_ENCODE_ANY);
+    json_decref(receive);
     /* Load the right to invoke */
-    char *inv = (char *)jwt_get_grant( jwt, "right_to_invoke" );
+    json_t *invoke = get_json_grant(jwt, "right_to_invoke" );
+    char *inv = json_dumps(invoke, JSON_ENCODE_ANY);
+    json_decref(invoke);
 
     rvi_rights_t *new = rvi_rights_create( rcv, inv, stop );
 
@@ -691,7 +722,6 @@ exit:
     free(key);
     jwt_free(jwt);
     if ( validity ) json_decref( validity );
-    if ( validity_str ) free( validity_str );
 
     return ret;
 }
@@ -852,8 +882,7 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
 
     /* Check validity: start/stop */
     time(&rawtime);
-    char *validity_str = (char *)jwt_get_grant( jwt, "validity" );
-    json_t *validity = json_loads(validity_str, 0, NULL);
+    json_t *validity = get_json_grant( jwt, "validity" );
 
     int start = json_integer_value( json_object_get( validity, "start" ) );
     int stop = json_integer_value( json_object_get( validity, "stop" ) );
@@ -877,7 +906,6 @@ exit:
     jwt_free( jwt );
     if( key ) free( key );
     if( validity ) json_decref( validity );
-    if( validity_str ) free( validity_str );
     if( tmp ) free( tmp );
     BIO_free_all( bio );
     X509_free( dcert );
