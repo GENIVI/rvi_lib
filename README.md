@@ -1,5 +1,7 @@
 # REMOTE VEHICLE INTERFACE {#mainpage}
 
+[![Build Status](https://travis-ci.org/tjamison/rvi_lib.svg?branch=master)](https://travis-ci.org/tjamison/rvi_lib)
+
 **(C) 2016 Jaguar Land Rover - All rights reserved.**
 
 All documents in this repository are licensed under the Creative
