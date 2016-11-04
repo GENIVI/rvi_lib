@@ -139,6 +139,8 @@ SSL_CTX *setup_client_ctx ( rvi_handle handle );
 
 int read_json_config ( rvi_handle handle, const char * filename );
 
+json_t *get_json_grant ( jwt_t *jwt, const char *grant );
+
 char *get_pubkey_file( char *filename );
 
 int validate_credential( rvi_handle handle, const char *cred, X509 *cert );
@@ -219,8 +221,7 @@ int compare_name ( void *a, void *b )
 int compare_pattern ( const char *pattern, const char *fqsn )
 {
     /* Check input */
-    if( !pattern || !fqsn )
-        return EINVAL;
+    if( !pattern || !fqsn ) { return EINVAL; }
     /* While there are bytes to compare */
     while( *pattern != '\0' && *fqsn != '\0' ) {
         /* If there's a topic wildcard... */
@@ -231,12 +232,10 @@ int compare_pattern ( const char *pattern, const char *fqsn )
             while( *fqsn++ != '/' && *fqsn != '\0' );
         }
         /* If the bytes don't match, return error */
-        if( *pattern++ != *fqsn++ )
-            return -1;
+        if( *pattern++ != *fqsn++ ) { return -1; }
     }
     /* If the pattern still has characters, the fqsn doesn't match */
-    if( *pattern != '\0' )
-        return -1;
+    if( *pattern != '\0' ) { return -1; }
 
     /* Otherwise, the fqsn matches the pattern */
     return RVI_OK;
@@ -255,11 +254,11 @@ rvi_service_t *rvi_service_create ( const char *name, const int registrant,
                                     const void *service_data, size_t n )
 {
     /* If name is NULL or registrant is negative, there's an error */
-    if ( !name || (registrant < 0) ) return NULL;
+    if ( !name || (registrant < 0) ) { return NULL; }
 
     /* Zero-initialize the struct */
     rvi_service_t *service = malloc( sizeof ( rvi_service_t ) );
-    if( !service ) return NULL;
+    if( !service ) { return NULL; }
     memset(service, 0, sizeof ( rvi_service_t ) );
 
     /* Set the service name */
@@ -312,11 +311,11 @@ void rvi_service_destroy ( rvi_service_t *service )
 rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd )
 {
     /* If sbio is null or fd is negative, there's a problem */
-    if ( !sbio || fd < 0 ) return NULL;
+    if ( !sbio || fd < 0 ) { return NULL; }
     
     /* Create a new data structure and zero-initialize it */
     rvi_remote_t *remote = malloc ( sizeof ( rvi_remote_t ) );
-    if( !remote ) return NULL;
+    if( !remote ) { return NULL; }
     memset ( remote, 0, sizeof ( rvi_remote_t ) );
 
     /* Set the file descriptor and BIO chain */
@@ -327,10 +326,7 @@ rvi_remote_t *rvi_remote_create ( BIO *sbio, const int fd )
      * right_to_invoke at this time. Those will be populated by parsing the au 
      * message. */
     remote->rights = malloc( sizeof( rvi_list ) );
-    if( !remote->rights ) {
-        free( remote );
-        return NULL;
-    }
+    if( !remote->rights ) { free( remote ); return NULL; }
     rvi_list_initialize( remote->rights );
 
     return remote;
@@ -359,12 +355,13 @@ rvi_rights_t *rvi_rights_create (   const char *right_to_receive,
                                     const char *right_to_invoke, 
                                     long validity )
 {
-    if( !right_to_receive || !right_to_invoke || validity < 1 )
+    if( !right_to_receive || !right_to_invoke || validity < 1 ) {
         return NULL;
+    }
 
     rvi_rights_t *new = NULL;
     new = malloc( sizeof( rvi_rights_t ) );
-    if( !new) return NULL;
+    if( !new ) { return NULL; }
     new->receive = json_loads( right_to_receive, 0, NULL);
     new->invoke = json_loads( right_to_invoke, 0, NULL);
     new->expiration = validity;
@@ -418,8 +415,7 @@ void rvi_creds_ldestroy ( rvi_list *list )
  * NULL on failure. */
 char *rvi_fqsn_get( rvi_handle handle, const char *service_name )
 {
-    if( !handle || !service_name )
-        return NULL;
+    if( !handle || !service_name ) { return NULL; }
 
     rvi_context_t   *ctx    = (rvi_context_t *)handle;
     char            *fqsn   = NULL;
@@ -428,7 +424,7 @@ char *rvi_fqsn_get( rvi_handle handle, const char *service_name )
     if( strncmp( service_name, ctx->id, idlen ) != 0 ) {
         size_t namelen = strlen( service_name );
         fqsn = malloc( namelen + idlen + 2 );
-        if( !fqsn ) return NULL;
+        if( !fqsn ) { return NULL; }
         sprintf( fqsn, "%s/%s", ctx->id, service_name );
     } else {
         fqsn = strdup( service_name );
@@ -468,7 +464,7 @@ int ssl_verify_callback ( int ok, X509_STORE_CTX *store )
  */
 SSL_CTX *setup_client_ctx ( rvi_handle handle )
 {
-    if ( !handle ) return NULL;
+    if ( !handle ) { return NULL; }
 
     rvi_context_t *rvi_ctx = (rvi_context_t *)handle;
 
@@ -534,8 +530,7 @@ SSL_CTX *setup_client_ctx ( rvi_handle handle )
  */
 int read_json_config ( rvi_handle handle, const char * filename )
 {
-    if ( !handle || !filename )
-        return EINVAL;
+    if ( !handle || !filename ) { return EINVAL; }
 
     int             err         = RVI_OK;
     json_error_t    errjson;
@@ -607,12 +602,12 @@ int read_json_config ( rvi_handle handle, const char * filename )
             if(!path) { err = ENOMEM; goto exit; }
             sprintf(path, "%s%s", ctx->creddir, dir->d_name );
             fp = fopen( path, "r" );
-            if( !fp ) return RVI_ERR_NOCRED;
+            if( !fp ) { err = RVI_ERR_NOCRED; goto exit; }
             /* go to end of file */
-            if( fseek( fp, 0L, SEEK_END ) != 0 ) return RVI_ERR_NOCRED;
+            if( fseek( fp, 0L, SEEK_END ) != 0 ) { err = RVI_ERR_NOCRED; goto exit; }
             /* get value of file position indicator */
             long bufsize = ftell(fp);
-            if( bufsize == -1 ) return RVI_ERR_NOCRED;
+            if( bufsize == -1 ) { err = RVI_ERR_NOCRED; goto exit; }
             cred = malloc( bufsize + 1 );
             if( !cred ) { err = ENOMEM; goto exit; }
             /* go back to start of file */
@@ -641,12 +636,37 @@ exit:
     return err;
 }
 
+json_t *get_json_grant ( jwt_t *jwt, const char *grant )
+{
+    if( !jwt || !grant || !strlen(grant) ) { return NULL; }
+
+    /* get token in plaintext */
+    char *plaintext = jwt_dump_str( jwt, 0 );
+
+    /* store pointer to free memory */
+    char *start = plaintext;
+
+    /* advance past header */
+    while( *plaintext++ != '.');
+
+    json_t *body = json_loads( plaintext, JSON_REJECT_DUPLICATES, NULL );
+
+    free( start );
+
+    json_t *claim = json_object_get( body, grant );
+
+    json_t *new = json_deep_copy( claim );
+
+    json_decref( body );
+
+    return new;
+}
+
 /** Get arrays of right_to_receive and right_to_invoke */
 int get_credential_rights( rvi_handle handle, const char *cred, 
                            rvi_list *rights )
 {
-    if( !handle || !cred ||  !rights )
-        return EINVAL;
+    if( !handle || !cred ||  !rights ) { return EINVAL; }
 
     rvi_context_p   ctx = (rvi_context_p)handle;
     jwt_t           *jwt;
@@ -666,8 +686,7 @@ int get_credential_rights( rvi_handle handle, const char *cred,
     
     /* Check validity: start/stop */
     time(&rawtime);
-    char *validity_str = (char *)jwt_get_grant( jwt, "validity" );
-    json_t *validity = json_loads(validity_str, 0, NULL);
+    json_t *validity = get_json_grant( jwt, "validity" );
 
     int start = json_integer_value( json_object_get( validity, "start" ) );
     int stop = json_integer_value( json_object_get( validity, "stop" ) );
@@ -675,9 +694,13 @@ int get_credential_rights( rvi_handle handle, const char *cred,
     if( ( start > rawtime ) || ( stop < rawtime ) ) { ret = -1; goto exit; }
     
     /* Load the rights to receive */
-    char *rcv = (char *)jwt_get_grant( jwt, "right_to_receive" );
+    json_t *receive = get_json_grant( jwt, "right_to_receive" );
+    char *rcv = json_dumps(receive, JSON_ENCODE_ANY);
+    json_decref(receive);
     /* Load the right to invoke */
-    char *inv = (char *)jwt_get_grant( jwt, "right_to_invoke" );
+    json_t *invoke = get_json_grant(jwt, "right_to_invoke" );
+    char *inv = json_dumps(invoke, JSON_ENCODE_ANY);
+    json_decref(invoke);
 
     rvi_rights_t *new = rvi_rights_create( rcv, inv, stop );
 
@@ -691,15 +714,13 @@ exit:
     free(key);
     jwt_free(jwt);
     if ( validity ) json_decref( validity );
-    if ( validity_str ) free( validity_str );
 
     return ret;
 }
 
 int rvi_rrcv_err( rvi_list *rlist, const char *service_name )
 {
-    if( !rlist || !service_name )
-        return EINVAL;
+    if( !rlist || !service_name ) { return EINVAL; }
 
     int     err     = -1; /* By default, assume no rights */
     json_t  *value  = NULL;
@@ -796,10 +817,8 @@ exit:
     BIO_free_all(certbio);
     BIO_free_all(mbio);
 
-    if( ret != RVI_OK )
-        return NULL;
-    else
-        return key;
+    if( ret != RVI_OK ) { return NULL; }
+    return key;
 }
 
 /** 
@@ -818,8 +837,7 @@ exit:
  */
 int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
 {
-    if( !handle || !cred )
-        return EINVAL;
+    if( !handle || !cred ) { return EINVAL; }
 
     int             ret;
     rvi_context_p   ctx = (rvi_context_p)handle;
@@ -852,8 +870,7 @@ int validate_credential( rvi_handle handle, const char *cred, X509 *cert )
 
     /* Check validity: start/stop */
     time(&rawtime);
-    char *validity_str = (char *)jwt_get_grant( jwt, "validity" );
-    json_t *validity = json_loads(validity_str, 0, NULL);
+    json_t *validity = get_json_grant( jwt, "validity" );
 
     int start = json_integer_value( json_object_get( validity, "start" ) );
     int stop = json_integer_value( json_object_get( validity, "stop" ) );
@@ -877,7 +894,6 @@ exit:
     jwt_free( jwt );
     if( key ) free( key );
     if( validity ) json_decref( validity );
-    if( validity_str ) free( validity_str );
     if( tmp ) free( tmp );
     BIO_free_all( bio );
     X509_free( dcert );
@@ -891,6 +907,7 @@ exit:
 
 rvi_handle rvi_init ( char *config_filename )
 {
+    if( !config_filename ) { return NULL; }
     /* initialize OpenSSL */
     SSL_library_init();
     SSL_load_error_strings();
@@ -935,8 +952,7 @@ rvi_handle rvi_init ( char *config_filename )
     while( ptr ) {
         int ret = get_credential_rights( ctx, (char *)ptr->pointer, 
                                          ctx->rights );
-        if( ret != RVI_OK )
-            goto err;
+        if( ret != RVI_OK ) { goto err; }
         ptr = ptr->next;
     }
 
@@ -993,8 +1009,7 @@ err:
 
 int rvi_cleanup(rvi_handle handle)
 {
-    if( !handle )
-        return EINVAL;
+    if( !handle ) { return EINVAL; }
 
     rvi_context_t * ctx = (rvi_context_p)handle;
     rvi_remote_t *  rtmp;
@@ -1091,9 +1106,7 @@ int rvi_cleanup(rvi_handle handle)
 int rvi_connect(rvi_handle handle, const char *addr, const char *port)
 {
     /* Ensure that we have received valid arguments */
-    if( !handle || !addr || !port ) {
-        return -EINVAL;
-    }
+    if( !handle || !addr || !port ) { return -EINVAL; }
 
     BIO             *sbio   = NULL;
     SSL             *ssl    = NULL;
@@ -1190,8 +1203,7 @@ err:
  */
 int rvi_disconnect(rvi_handle handle, int fd)
 {
-    if( !handle || fd < 3 ) 
-        return -EINVAL;
+    if( !handle || fd < 3 ) { return -EINVAL; }
     
     rvi_context_t * ctx = (rvi_context_t *)handle;
     rvi_remote_t    rkey = {0};
@@ -1209,7 +1221,7 @@ int rvi_disconnect(rvi_handle handle, int fd)
 
     if( ( res = btree_delete(ctx->remote_idx, 
                              ctx->remote_idx->root, rtmp ) ) < 0 ) {
-        return -1;
+        return res;
     } 
     /* Search the service tree for any services registered by the remote */
     skey.registrant = fd;
@@ -1232,8 +1244,7 @@ int rvi_disconnect(rvi_handle handle, int fd)
  */
 int rvi_get_connections(rvi_handle handle, int *conn, int *conn_size)
 {
-    if( !handle || !conn || !conn_size )
-        return EINVAL;
+    if( !handle || !conn || !conn_size ) { return EINVAL; }
 
     rvi_context_t *ctx = (rvi_context_t *)handle;
 
@@ -1272,8 +1283,7 @@ int rvi_register_service( rvi_handle handle, const char *service_name,
                           rvi_callback_t callback, 
                           void *service_data, size_t n )
 {
-    if( !handle || !service_name )
-        return EINVAL;
+    if( !handle || !service_name ) { return EINVAL; }
 
     int             err         = 0;
     rvi_context_t   *ctx        =   (rvi_context_t *)handle;
@@ -1281,8 +1291,7 @@ int rvi_register_service( rvi_handle handle, const char *service_name,
     char            *fqsn       = NULL;
 
     fqsn = rvi_fqsn_get( handle, service_name );
-    if( !fqsn )
-        return ENOMEM;
+    if( !fqsn ) { return ENOMEM; }
     
     if( (err = rvi_rrcv_err( ctx->rights, fqsn ) ) ) {
         goto exit;
@@ -1309,8 +1318,7 @@ exit:
  */
 int rvi_unregister_service(rvi_handle handle, const char *service_name)
 {
-    if( !handle || !service_name )
-        return EINVAL;
+    if( !handle || !service_name ) { return EINVAL; }
 
     int             err     = RVI_OK;
     rvi_context_t   *ctx    = ( rvi_context_t * )handle;
@@ -1341,19 +1349,16 @@ exit:
 
 int rvi_remove_service(rvi_handle handle, const char *service_name)
 {
-    if( !handle || !service_name )
-        return EINVAL;
+    if( !handle || !service_name ) { return EINVAL; }
 
     rvi_context_t   *ctx    = ( rvi_context_t * )handle;
     rvi_service_t   skey    = {0};
     
     skey.name = strdup( service_name );
     rvi_service_t *stmp = btree_search( ctx->service_name_idx, &skey );
-
     free( skey.name );
     
-    if( !stmp )
-        return -ENOENT;
+    if( !stmp ) { return ENOENT; }
     btree_delete( ctx->service_name_idx, 
                           ctx->service_name_idx->root, stmp );
     btree_delete( ctx->service_reg_idx, 
@@ -1368,8 +1373,7 @@ int rvi_remove_service(rvi_handle handle, const char *service_name)
  */
 int rvi_get_services(rvi_handle handle, char **result, int *len)
 {
-    if( !handle || !result || ( *len < 1 ) )
-        return EINVAL;
+    if( !handle || !result || ( *len < 1 ) ) { return EINVAL; }
 
     rvi_context_t *ctx = (rvi_context_t *)handle;
 
@@ -1402,8 +1406,7 @@ int rvi_get_services(rvi_handle handle, char **result, int *len)
 int rvi_invoke_remote_service(rvi_handle handle, const char *service_name, 
                               const char *parameters)
 {
-    if( !handle || !service_name )
-        return EINVAL;
+    if( !handle || !service_name ) { return EINVAL; }
     /* get service from service name index */
 
     rvi_context_t *ctx = (rvi_context_t *)handle;
@@ -1421,10 +1424,7 @@ int rvi_invoke_remote_service(rvi_handle handle, const char *service_name,
     skey.name = strdup(service_name);
 
     stmp = btree_search(ctx->service_name_idx, &skey);
-    if( !stmp ) { /* if not found, return error */
-        ret = ENOENT;
-        goto exit;
-    }
+    if( !stmp ) { ret = ENOENT; goto exit; }
 
     /* identify registrant, get SSL session from remote index */
     rkey.fd = stmp->registrant;
@@ -1478,8 +1478,7 @@ exit:
 
 int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
 {
-    if( !handle || !fd_arr || ( fd_len < 1 ) )
-        return EINVAL;
+    if( !handle || !fd_arr || ( fd_len < 1 ) ) { return EINVAL; }
 
     rvi_context_t   *ctx    = (rvi_context_t *)handle;
     rvi_remote_t    rkey    = {0};
@@ -1530,7 +1529,9 @@ int rvi_process_input(rvi_handle handle, int *fd_arr, int fd_len)
         if( !root ) { err = RVI_ERR_JSON; goto exit; }
 
         /* Get RVI cmd from string */
-        strcpy( cmd, json_string_value( json_object_get( root, "cmd" ) ) );
+        strncpy( cmd, json_string_value( json_object_get( root, "cmd" ) ), 5 );
+        /* Ensure null-termination */
+        cmd[4] = 0;
 
         if( strcmp( cmd, "au" ) == 0 ) {
             rvi_read_au( handle, root, rtmp );
@@ -1564,8 +1565,7 @@ exit:
 
 int rvi_read_au( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
 {
-    if( !handle || !msg || !remote )
-        return EINVAL;
+    if( !handle || !msg || !remote ) { return EINVAL; }
 
     int             err     = 0;
     SSL             *ssl    = NULL;
@@ -1607,8 +1607,7 @@ exit:
 
 int rvi_write_au( rvi_handle handle, rvi_remote_t *remote )
 {
-    if( !handle || !remote )
-        return EINVAL;
+    if( !handle || !remote ) { return EINVAL; }
 
     int             err     = RVI_OK;
     rvi_context_t   *ctx    = ( rvi_context_t * )handle;
@@ -1647,8 +1646,7 @@ exit:
 
 int rvi_read_sa( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
 {
-    if( !handle || !msg || !remote )
-        return EINVAL;
+    if( !handle || !msg || !remote ) { return EINVAL; }
 
     int             err     = 0;
     rvi_context_t   *ctx    = ( rvi_context_t * )handle;
@@ -1699,8 +1697,7 @@ exit:
 
 int rvi_all_service_announce( rvi_handle handle, rvi_remote_t *remote )
 {
-    if( !handle || !remote )
-        return EINVAL;
+    if( !handle || !remote ) { return EINVAL; }
 
 
     int             err     = RVI_OK;
@@ -1750,8 +1747,7 @@ exit:
 
 int rvi_service_announce( rvi_handle handle, rvi_service_t *service, int available )
 {
-    if( !handle || !service )
-        return EINVAL;
+    if( !handle || !service ) { return EINVAL; }
 
     int             err     = RVI_OK;
     rvi_context_t   *ctx    = (rvi_context_t *)handle;
@@ -1759,8 +1755,7 @@ int rvi_service_announce( rvi_handle handle, rvi_service_t *service, int availab
     json_t          *sa     = NULL;
     char            *saString = NULL;
 
-    svcs = json_array();
-    json_array_append_new( svcs, json_string( service->name ) );
+    svcs = json_pack( "[s]", service->name );
     if( ( err = rvi_rrcv_err( ctx->rights, service->name ) ) ) {
         err = -RVI_ERR_RIGHTS; 
         goto exit;
@@ -1798,7 +1793,6 @@ int rvi_service_announce( rvi_handle handle, rvi_service_t *service, int availab
 
 exit:
     if( saString ) free( saString );
-    json_decref(svcs);
     json_decref(sa);
 
     return err;
@@ -1806,8 +1800,7 @@ exit:
 
 int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
 {
-    if( !handle || !msg || !remote )
-        return EINVAL;
+    if( !handle || !msg || !remote ) { return EINVAL; }
 
     int             err     = 0;
     rvi_context_t   *ctx    = ( rvi_context_t * )handle;
@@ -1820,16 +1813,11 @@ int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
     const char      *sname;
 
     tmp = json_object_get( msg, "data" );
-    if( !tmp ) {
-        err = RVI_ERR_JSON;
-        goto exit;
-    }
+    if( !tmp ) { err = RVI_ERR_JSON; goto exit; }
 
     long timeout = json_integer_value( json_object_get( tmp, "timeout" ) );
     time(&rawtime);
-    if( rawtime > timeout ) { /* Service invocation timed out, discard */
-        goto exit;
-    }
+    if( rawtime > timeout ) { err = RVI_ERR_JSON; goto exit; }
 
     sname = json_string_value( json_object_get( tmp, "service" ) );
     if( ( err = rvi_rinv_err( remote->rights, sname ) ) )
@@ -1839,16 +1827,10 @@ int rvi_read_rcv( rvi_handle handle, json_t *msg, rvi_remote_t *remote )
 
     skey.name = strdup( sname );
     stmp = btree_search( ctx->service_name_idx, &skey );
-    if( !stmp ) {
-        err = ENXIO; 
-        goto exit;
-    }
+    if( !stmp ) { err = ENXIO; goto exit; }
 
     params = json_object_get( tmp, "parameters" );
-    if( !params ) {
-        err = RVI_ERR_JSON;
-        goto exit;
-    }
+    if( !params ) { err = RVI_ERR_JSON; goto exit; }
     parameters = json_dumps( params, JSON_COMPACT );
 
     stmp->callback( remote->fd, stmp->data, parameters );

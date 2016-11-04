@@ -1,0 +1,11 @@
+dist: trusty
+sudo: required
+language: c
+compile:
+    - gcc
+    - clang
+before_install:
+    - sudo apt-get update -qq
+    - sudo apt-get install -y -qq libjansson-dev libssl-dev
+script:
+    - make libs 
