@@ -1,4 +1,4 @@
-CFLAGS += -Ilibjwt/include/jwt.h
+CFLAGS += -Ilibjwt/include/
 LDFLAGS += -Llibjwt/lib/
 MODLIB += rvi
 LIBS_rvi := -lssl -lcrypto -ljansson -ljwt
