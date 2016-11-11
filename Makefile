@@ -59,13 +59,13 @@ libs: $(foreach var,$(MODLIB),$(INCLUDE_$(var)))
 	mkdir -p $(LLIBDIR); \
 	$(foreach var,$(MODLIB),$(CC) $(CFLAGS) -shared \
 		-o $(LLIBDIR)/lib$(var).so $(INCLUDE_$(var)) \
-		$(LDFLAGS) $(LIBS_$(var));)
+		$(LDFLAGS) $(LIBS_$(var));) 
 
 # Link the program
 $(TARGET): $(OBJ) libs
 	echo "Building the executable in" $(LBINDIR) "..."; \
 	$(CC) -o $@ $(OBJ) $(CFLAGS) $(LDFLAGS)  $(LIBS) \
-		$(SHAREDLIBS)
+		$(SHAREDLIBS); rm -rf *.o */*.o
 
 install: libs 
 	echo -- Installing: $(INSTALL_PATH)/lib/librvi.so;\

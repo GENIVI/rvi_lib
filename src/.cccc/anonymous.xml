@@ -1,0 +1,1386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--Detailed report on module anonymous-->
+<CCCC_Project>
+<module_summary>
+<lines_of_code value="2318" level="2" />
+<lines_of_code_per_member_function value="******" level="0" />
+<McCabes_cyclomatic_complexity value="544" level="1" />
+<McCabes_cyclomatic_complexity_per_member_function value="******" level="2" />
+<lines_of_code value="2042" level="0" />
+<lines_of_code_per_member_function value="********" level="2" />
+<lines_of_code_per_line_of_comment value="1.135" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.266" level="0" />
+<weighted_methods_per_class_unity value="88" level="0" />
+<weighted_methods_per_class_visibility value="87" level="0" />
+<depth_of_inheritance_tree value="0" level="0" />
+<number_of_children value="0" level="0" />
+<coupling_between_objects value="0" level="0" />
+<IF4 value="0" level="0" />
+<IF4_per_member_function value="********" level="0" />
+<IF4_visible value="0" level="0" />
+<IF4_visible_per_member_function value="********" level="0" />
+<IF4_concrete value="0" level="0" />
+<IF4_concrete_per_member_function value="********" level="0" />
+</module_summary>
+<module_detail>
+</module_detail>
+<procedural_detail>
+<member_function>
+<name>allocate_btree_node(btree_t *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="40" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="114" />
+</extent>
+<lines_of_code value="15" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="35" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_create(int,compareFunc)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="76" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="125" />
+</extent>
+<lines_of_code value="15" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="27" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_delete(btree_t *,bt_node_t *,void *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="921" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="131" />
+</extent>
+<lines_of_code value="161" level="2" />
+<McCabes_cyclomatic_complexity value="42" level="2" />
+<lines_of_comment value="166" level="0" />
+<lines_of_code_per_line_of_comment value="0.970" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.253" level="0" />
+</member_function>
+<member_function>
+<name>btree_destroy(btree_t *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1355" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="127" />
+</extent>
+<lines_of_code value="28" level="0" />
+<McCabes_cyclomatic_complexity value="3" level="0" />
+<lines_of_comment value="29" level="0" />
+<lines_of_code_per_line_of_comment value="0.966" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_find(btree_t *,void *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1664" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="184" />
+</extent>
+<lines_of_code value="84" level="1" />
+<McCabes_cyclomatic_complexity value="15" level="1" />
+<lines_of_comment value="168" level="0" />
+<lines_of_code_per_line_of_comment value="0.500" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.089" level="0" />
+</member_function>
+<member_function>
+<name>btree_get_max(btree_t *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1451" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="135" />
+</extent>
+<lines_of_code value="12" level="0" />
+<McCabes_cyclomatic_complexity value="4" level="0" />
+<lines_of_comment value="5" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_get_min(btree_t *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1470" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="133" />
+</extent>
+<lines_of_code value="12" level="0" />
+<McCabes_cyclomatic_complexity value="4" level="0" />
+<lines_of_comment value="5" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_insert(btree_t *,void *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="417" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="129" />
+</extent>
+<lines_of_code value="26" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="50" level="0" />
+<lines_of_code_per_line_of_comment value="0.520" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_insert_nonfull(btree_t *,bt_node_t *,void *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="42" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="313" />
+</extent>
+<lines_of_code value="44" level="1" />
+<McCabes_cyclomatic_complexity value="7" level="0" />
+<lines_of_comment value="62" level="0" />
+<lines_of_code_per_line_of_comment value="0.710" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.113" level="0" />
+</member_function>
+<member_function>
+<name>btree_iter_at_end(btree_iter)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2348" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="228" />
+</extent>
+<lines_of_code value="5" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="18" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_iter_begin(btree_t *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1912" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="199" />
+</extent>
+<lines_of_code value="22" level="0" />
+<McCabes_cyclomatic_complexity value="3" level="0" />
+<lines_of_comment value="38" level="0" />
+<lines_of_code_per_line_of_comment value="0.579" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_iter_cleanup(btree_iter)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2410" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="245" />
+</extent>
+<lines_of_code value="13" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="41" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_iter_cmp(btree_iter,btree_iter)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2326" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="223" />
+</extent>
+<lines_of_code value="6" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="21" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_iter_data(btree_iter)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2375" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="234" />
+</extent>
+<lines_of_code value="9" level="0" />
+<McCabes_cyclomatic_complexity value="3" level="0" />
+<lines_of_comment value="31" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_iter_end(btree_t *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1975" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="205" />
+</extent>
+<lines_of_code value="16" level="0" />
+<McCabes_cyclomatic_complexity value="3" level="0" />
+<lines_of_comment value="34" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_iter_next(btree_iter)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2031" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="211" />
+</extent>
+<lines_of_code value="135" level="2" />
+<McCabes_cyclomatic_complexity value="20" level="1" />
+<lines_of_comment value="137" level="0" />
+<lines_of_code_per_line_of_comment value="0.985" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.146" level="0" />
+</member_function>
+<member_function>
+<name>btree_iter_previous(btree_iter)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2301" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="217" />
+</extent>
+<lines_of_code value="7" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="18" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_iterator_new(btree_t *,void *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1606" />
+</extent>
+<lines_of_code value="13" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="52" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_rfind(btree_t *,void *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1886" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="194" />
+</extent>
+<lines_of_code value="6" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="30" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_search(btree_t *,void *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1418" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="137" />
+</extent>
+<lines_of_code value="12" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="19" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_split_child(btree_t *,bt_node_t *,int,bt_node_t *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="193" />
+</extent>
+<lines_of_code value="40" level="1" />
+<McCabes_cyclomatic_complexity value="5" level="0" />
+<lines_of_comment value="62" level="0" />
+<lines_of_code_per_line_of_comment value="0.645" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.081" level="0" />
+</member_function>
+<member_function>
+<name>btree_traverse(btree_t *,traverseFunc)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1556" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="139" />
+</extent>
+<lines_of_code value="6" level="0" />
+<McCabes_cyclomatic_complexity value="0" level="0" />
+<lines_of_comment value="9" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>btree_traverse_node(bt_node_t *,traverseFunc)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="61" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1494" />
+</extent>
+<lines_of_code value="25" level="0" />
+<McCabes_cyclomatic_complexity value="4" level="0" />
+<lines_of_comment value="34" level="0" />
+<lines_of_code_per_line_of_comment value="0.735" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>delete_key_from_node(btree_t *,nodePosition *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="49" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="867" />
+</extent>
+<lines_of_code value="22" level="0" />
+<McCabes_cyclomatic_complexity value="6" level="0" />
+<lines_of_comment value="27" level="0" />
+<lines_of_code_per_line_of_comment value="0.815" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.222" level="0" />
+</member_function>
+<member_function>
+<name>free_btree_node(bt_node_t *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="45" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="174" />
+</extent>
+<lines_of_code value="9" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="6" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>getCount(btree_t *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.h" line="254" />
+</extent>
+<lines_of_code value="4" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="6" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>getDataRecord(bt_node_t *,int)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.h" line="272" />
+</extent>
+<lines_of_code value="4" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>getLeftChild(bt_node_t *,int)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.h" line="260" />
+</extent>
+<lines_of_code value="4" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>getRightChild(bt_node_t *,int)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.h" line="266" />
+</extent>
+<lines_of_code value="4" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>get_btree_node(btree_t *,void *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="47" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="1275" />
+</extent>
+<lines_of_code value="35" level="1" />
+<McCabes_cyclomatic_complexity value="9" level="0" />
+<lines_of_comment value="41" level="0" />
+<lines_of_code_per_line_of_comment value="0.854" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.220" level="0" />
+</member_function>
+<member_function>
+<name>get_max_key_pos(btree_t *,bt_node_t *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="54" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="502" />
+</extent>
+<lines_of_code value="25" level="0" />
+<McCabes_cyclomatic_complexity value="6" level="0" />
+<lines_of_comment value="38" level="0" />
+<lines_of_code_per_line_of_comment value="0.658" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.158" level="0" />
+</member_function>
+<member_function>
+<name>get_min_key_pos(btree_t *,bt_node_t *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="56" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="568" />
+</extent>
+<lines_of_code value="25" level="0" />
+<McCabes_cyclomatic_complexity value="6" level="0" />
+<lines_of_comment value="38" level="0" />
+<lines_of_code_per_line_of_comment value="0.658" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.158" level="0" />
+</member_function>
+<member_function>
+<name>merge_siblings(btree_t *,bt_node_t *,int)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="58" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="648" />
+</extent>
+<lines_of_code value="57" level="1" />
+<McCabes_cyclomatic_complexity value="8" level="0" />
+<lines_of_comment value="95" level="0" />
+<lines_of_code_per_line_of_comment value="0.600" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.084" level="0" />
+</member_function>
+<member_function>
+<name>move_key(btree_t *,bt_node_t *,int,position_t)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="51" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="799" />
+</extent>
+<lines_of_code value="50" level="1" />
+<McCabes_cyclomatic_complexity value="4" level="0" />
+<lines_of_comment value="10" level="0" />
+<lines_of_code_per_line_of_comment value="5.000" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>offset(btree_t *,bt_node_t *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2457" />
+</extent>
+<lines_of_code value="10" level="0" />
+<McCabes_cyclomatic_complexity value="3" level="0" />
+<lines_of_comment value="16" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>printFunction(char *,void *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="7" />
+</extent>
+<lines_of_code value="1" level="0" />
+<McCabes_cyclomatic_complexity value="0" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>print_single_node(btree_t *,bt_node_t *,printFunc)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.c" line="36" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2475" />
+</extent>
+<lines_of_code value="27" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="6" level="0" />
+<lines_of_code_per_line_of_comment value="4.500" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>print_subtree(btree_t *,bt_node_t *,printFunc)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2512" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="btree.h" line="283" />
+</extent>
+<lines_of_code value="40" level="1" />
+<McCabes_cyclomatic_complexity value="4" level="0" />
+<lines_of_comment value="12" level="0" />
+<lines_of_code_per_line_of_comment value="3.333" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rviAllServiceAnnounce(TRviHandle,TRviRemote *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="163" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1698" />
+</extent>
+<lines_of_code value="39" level="1" />
+<McCabes_cyclomatic_complexity value="9" level="0" />
+<lines_of_comment value="6" level="0" />
+<lines_of_code_per_line_of_comment value="6.500" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="1.500" level="0" />
+</member_function>
+<member_function>
+<name>rviCleanup(TRviHandle)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1010" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="135" />
+</extent>
+<lines_of_code value="52" level="1" />
+<McCabes_cyclomatic_complexity value="17" level="1" />
+<lines_of_comment value="38" level="0" />
+<lines_of_code_per_line_of_comment value="1.368" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.447" level="0" />
+</member_function>
+<member_function>
+<name>rviCompareFd(void *,void *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="125" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="176" />
+</extent>
+<lines_of_code value="7" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="7" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rviCompareName(void *,void *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="129" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="208" />
+</extent>
+<lines_of_code value="7" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="4" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rviComparePattern(const char *,const char *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="131" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="221" />
+</extent>
+<lines_of_code value="14" level="0" />
+<McCabes_cyclomatic_complexity value="15" level="1" />
+<lines_of_comment value="13" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="1.154" level="0" />
+</member_function>
+<member_function>
+<name>rviCompareRegistrant(void *,void *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="127" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="190" />
+</extent>
+<lines_of_code value="12" level="0" />
+<McCabes_cyclomatic_complexity value="4" level="0" />
+<lines_of_comment value="6" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rviConnect(TRviHandle,const char *,const char *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1106" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="166" />
+</extent>
+<lines_of_code value="60" level="1" />
+<McCabes_cyclomatic_complexity value="15" level="1" />
+<lines_of_comment value="53" level="0" />
+<lines_of_code_per_line_of_comment value="1.132" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.283" level="0" />
+</member_function>
+<member_function>
+<name>rviCredentialListDestroy(rvi_list *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="120" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="399" />
+</extent>
+<lines_of_code value="14" level="0" />
+<McCabes_cyclomatic_complexity value="3" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rviDisconnect(TRviHandle,int)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1204" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="176" />
+</extent>
+<lines_of_code value="28" level="0" />
+<McCabes_cyclomatic_complexity value="9" level="0" />
+<lines_of_comment value="15" level="0" />
+<lines_of_code_per_line_of_comment value="1.867" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.600" level="0" />
+</member_function>
+<member_function>
+<name>rviFqsnGet(TRviHandle,const char *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="122" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="416" />
+</extent>
+<lines_of_code value="17" level="0" />
+<McCabes_cyclomatic_complexity value="7" level="0" />
+<lines_of_comment value="3" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="2.333" level="0" />
+</member_function>
+<member_function>
+<name>rviGetConnections(TRviHandle,int *,int *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1245" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="196" />
+</extent>
+<lines_of_code value="25" level="0" />
+<McCabes_cyclomatic_complexity value="12" level="1" />
+<lines_of_comment value="21" level="0" />
+<lines_of_code_per_line_of_comment value="1.190" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.571" level="0" />
+</member_function>
+<member_function>
+<name>rviGetJsonGrant(jwt_t *,const char *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="142" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="639" />
+</extent>
+<lines_of_code value="14" level="0" />
+<McCabes_cyclomatic_complexity value="6" level="0" />
+<lines_of_comment value="3" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="2.000" level="0" />
+</member_function>
+<member_function>
+<name>rviGetPubkeyFile(char *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="144" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="770" />
+</extent>
+<lines_of_code value="37" level="1" />
+<McCabes_cyclomatic_complexity value="12" level="1" />
+<lines_of_comment value="13" level="0" />
+<lines_of_code_per_line_of_comment value="2.846" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.923" level="0" />
+</member_function>
+<member_function>
+<name>rviGetRightsFromCredential(TRviHandle,const char *,rvi_list *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="148" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="666" />
+</extent>
+<lines_of_code value="37" level="1" />
+<McCabes_cyclomatic_complexity value="11" level="1" />
+<lines_of_comment value="6" level="0" />
+<lines_of_code_per_line_of_comment value="6.167" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="1.833" level="0" />
+</member_function>
+<member_function>
+<name>rviGetServices(TRviHandle,char **,int *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1374" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="264" />
+</extent>
+<lines_of_code value="25" level="0" />
+<McCabes_cyclomatic_complexity value="12" level="1" />
+<lines_of_comment value="19" level="0" />
+<lines_of_code_per_line_of_comment value="1.316" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.632" level="0" />
+</member_function>
+<member_function>
+<name>rviInit(char *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="908" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="121" />
+</extent>
+<lines_of_code value="52" level="1" />
+<McCabes_cyclomatic_complexity value="15" level="1" />
+<lines_of_comment value="63" level="0" />
+<lines_of_code_per_line_of_comment value="0.825" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.238" level="0" />
+</member_function>
+<member_function>
+<name>rviInvokeService(TRviHandle,const char *,const char *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1406" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="286" />
+</extent>
+<lines_of_code value="53" level="1" />
+<McCabes_cyclomatic_complexity value="9" level="0" />
+<lines_of_comment value="30" level="0" />
+<lines_of_code_per_line_of_comment value="1.767" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.300" level="0" />
+</member_function>
+<member_function>
+<name>rviProcessInput(TRviHandle,int *,int)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1479" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="317" />
+</extent>
+<lines_of_code value="63" level="1" />
+<McCabes_cyclomatic_complexity value="15" level="1" />
+<lines_of_comment value="40" level="0" />
+<lines_of_code_per_line_of_comment value="1.575" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.375" level="0" />
+</member_function>
+<member_function>
+<name>rviReadAu(TRviHandle,json_t *,TRviRemote *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="157" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1566" />
+</extent>
+<lines_of_code value="36" level="1" />
+<McCabes_cyclomatic_complexity value="11" level="1" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="******" level="2" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="******" level="2" />
+</member_function>
+<member_function>
+<name>rviReadJsonConfig(TRviHandle,const char *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="140" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="531" />
+</extent>
+<lines_of_code value="85" level="1" />
+<McCabes_cyclomatic_complexity value="23" level="1" />
+<lines_of_comment value="17" level="0" />
+<lines_of_code_per_line_of_comment value="5.000" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="1.353" level="0" />
+</member_function>
+<member_function>
+<name>rviReadRcv(TRviHandle,json_t *,TRviRemote *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="167" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1801" />
+</extent>
+<lines_of_code value="34" level="1" />
+<McCabes_cyclomatic_complexity value="12" level="1" />
+<lines_of_comment value="2" level="0" />
+<lines_of_code_per_line_of_comment value="17.000" level="1" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="6.000" level="1" />
+</member_function>
+<member_function>
+<name>rviReadSa(TRviHandle,json_t *,TRviRemote *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="161" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1647" />
+</extent>
+<lines_of_code value="41" level="1" />
+<McCabes_cyclomatic_complexity value="11" level="1" />
+<lines_of_comment value="6" level="0" />
+<lines_of_code_per_line_of_comment value="6.833" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="1.833" level="0" />
+</member_function>
+<member_function>
+<name>rviRegisterService(TRviHandle,const char *,TRviCallback,void *,size_t)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1282" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="225" />
+</extent>
+<lines_of_code value="25" level="0" />
+<McCabes_cyclomatic_complexity value="7" level="0" />
+<lines_of_comment value="35" level="0" />
+<lines_of_code_per_line_of_comment value="0.714" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.200" level="0" />
+</member_function>
+<member_function>
+<name>rviRemoteCreate(BIO *,const int)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="108" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="311" />
+</extent>
+<lines_of_code value="14" level="0" />
+<McCabes_cyclomatic_complexity value="8" level="0" />
+<lines_of_comment value="13" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.615" level="0" />
+</member_function>
+<member_function>
+<name>rviRemoteDestroy(TRviRemote *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="110" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="340" />
+</extent>
+<lines_of_code value="9" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="5" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rviRemoveService(TRviHandle,const char *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="155" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1350" />
+</extent>
+<lines_of_code value="17" level="0" />
+<McCabes_cyclomatic_complexity value="6" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="******" level="2" />
+</member_function>
+<member_function>
+<name>rviRightToInvokeError(rvi_list *,const char *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="153" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="745" />
+</extent>
+<lines_of_code value="20" level="0" />
+<McCabes_cyclomatic_complexity value="6" level="0" />
+<lines_of_comment value="2" level="0" />
+<lines_of_code_per_line_of_comment value="10.000" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="3.000" level="0" />
+</member_function>
+<member_function>
+<name>rviRightToReceiveError(rvi_list *,const char *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="151" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="721" />
+</extent>
+<lines_of_code value="21" level="0" />
+<McCabes_cyclomatic_complexity value="7" level="0" />
+<lines_of_comment value="2" level="0" />
+<lines_of_code_per_line_of_comment value="10.500" level="1" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="3.500" level="0" />
+</member_function>
+<member_function>
+<name>rviRightsCreate(const char *,const char *,long)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="112" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="354" />
+</extent>
+<lines_of_code value="18" level="0" />
+<McCabes_cyclomatic_complexity value="7" level="0" />
+<lines_of_comment value="2" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="3.500" level="0" />
+</member_function>
+<member_function>
+<name>rviRightsDestroy(TRviRights *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="116" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="373" />
+</extent>
+<lines_of_code value="8" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="1" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rviRightsListDestroy(rvi_list *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="118" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="383" />
+</extent>
+<lines_of_code value="16" level="0" />
+<McCabes_cyclomatic_complexity value="3" level="0" />
+<lines_of_comment value="2" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rviServiceAnnounce(TRviHandle,TRviService *,int)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="165" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1748" />
+</extent>
+<lines_of_code value="43" level="1" />
+<McCabes_cyclomatic_complexity value="11" level="1" />
+<lines_of_comment value="4" level="0" />
+<lines_of_code_per_line_of_comment value="10.750" level="1" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="2.750" level="0" />
+</member_function>
+<member_function>
+<name>rviServiceCreate(const char *,const int,const TRviCallback,const void *,size_t)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="102" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="252" />
+</extent>
+<lines_of_code value="25" level="0" />
+<McCabes_cyclomatic_complexity value="9" level="0" />
+<lines_of_comment value="17" level="0" />
+<lines_of_code_per_line_of_comment value="1.471" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.529" level="0" />
+</member_function>
+<member_function>
+<name>rviServiceDestroy(TRviService *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="106" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="293" />
+</extent>
+<lines_of_code value="9" level="0" />
+<McCabes_cyclomatic_complexity value="3" level="0" />
+<lines_of_comment value="5" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rviSetupClientCtx(TRviHandle)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="136" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="465" />
+</extent>
+<lines_of_code value="37" level="1" />
+<McCabes_cyclomatic_complexity value="13" level="1" />
+<lines_of_comment value="16" level="0" />
+<lines_of_code_per_line_of_comment value="2.312" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.812" level="0" />
+</member_function>
+<member_function>
+<name>rviUnregisterService(TRviHandle,const char *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1319" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.h" line="245" />
+</extent>
+<lines_of_code value="24" level="0" />
+<McCabes_cyclomatic_complexity value="6" level="0" />
+<lines_of_comment value="19" level="0" />
+<lines_of_code_per_line_of_comment value="1.263" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.316" level="0" />
+</member_function>
+<member_function>
+<name>rviValidateCredential(TRviHandle,const char *,X509 *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="146" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="838" />
+</extent>
+<lines_of_code value="47" level="1" />
+<McCabes_cyclomatic_complexity value="14" level="1" />
+<lines_of_comment value="19" level="0" />
+<lines_of_code_per_line_of_comment value="2.474" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.737" level="0" />
+</member_function>
+<member_function>
+<name>rviWriteAu(TRviHandle,TRviRemote *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="159" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="1608" />
+</extent>
+<lines_of_code value="30" level="0" />
+<McCabes_cyclomatic_complexity value="6" level="0" />
+<lines_of_comment value="4" level="0" />
+<lines_of_code_per_line_of_comment value="7.500" level="1" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="1.500" level="0" />
+</member_function>
+<member_function>
+<name>rvi_list_get_count(rvi_list *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi_list.h" line="39" />
+</extent>
+<lines_of_code value="4" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rvi_list_initialize(rvi_list *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi_list.c" line="36" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi_list.h" line="31" />
+</extent>
+<lines_of_code value="9" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="24" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rvi_list_insert(rvi_list *,void *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi_list.c" line="66" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi_list.h" line="33" />
+</extent>
+<lines_of_code value="25" level="0" />
+<McCabes_cyclomatic_complexity value="4" level="0" />
+<lines_of_comment value="36" level="0" />
+<lines_of_code_per_line_of_comment value="0.694" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>rvi_list_remove(rvi_list *,void *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi_list.c" line="132" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi_list.h" line="35" />
+</extent>
+<lines_of_code value="30" level="0" />
+<McCabes_cyclomatic_complexity value="5" level="0" />
+<lines_of_comment value="51" level="0" />
+<lines_of_code_per_line_of_comment value="0.588" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="0.098" level="0" />
+</member_function>
+<member_function>
+<name>rvi_list_remove_head(rvi_list *,void **)</name>
+<extent>
+<description>definition</description>
+<source_reference file="rvi_list.c" line="218" />
+</extent>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi_list.h" line="37" />
+</extent>
+<lines_of_code value="15" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="30" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>sslVerifyCallback(int,X509_STORE_CTX *)</name>
+<extent>
+<description>declaration</description>
+<source_reference file="rvi.c" line="134" />
+</extent>
+<extent>
+<description>definition</description>
+<source_reference file="rvi.c" line="441" />
+</extent>
+<lines_of_code value="18" level="0" />
+<McCabes_cyclomatic_complexity value="2" level="0" />
+<lines_of_comment value="4" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>validateBtree(btree_t *,int,bool)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2651" />
+</extent>
+<lines_of_code value="18" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>validateCleanup(void)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2643" />
+</extent>
+<lines_of_code value="6" level="0" />
+<McCabes_cyclomatic_complexity value="0" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>validateInit(int)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2592" />
+</extent>
+<lines_of_code value="6" level="0" />
+<McCabes_cyclomatic_complexity value="0" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>validateRecord(void *)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2601" />
+</extent>
+<lines_of_code value="6" level="0" />
+<McCabes_cyclomatic_complexity value="0" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+<member_function>
+<name>validateReport(bool)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2610" />
+</extent>
+<lines_of_code value="30" level="0" />
+<McCabes_cyclomatic_complexity value="6" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="******" level="2" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="******" level="2" />
+</member_function>
+<member_function>
+<name>validateReset(void)</name>
+<extent>
+<description>definition</description>
+<source_reference file="btree.c" line="2583" />
+</extent>
+<lines_of_code value="7" level="0" />
+<McCabes_cyclomatic_complexity value="1" level="0" />
+<lines_of_comment value="0" level="0" />
+<lines_of_code_per_line_of_comment value="------" level="0" />
+<McCabes_cyclomatic_complexity_per_line_of_comment value="------" level="0" />
+</member_function>
+</procedural_detail>
+<structural_detail>
+<module>
+<name>anonymous</name>
+<client_module>
+</client_module>
+<supplier_module>
+</supplier_module>
+</module>
+</structural_detail>
+</CCCC_Project>

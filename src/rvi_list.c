@@ -33,7 +33,7 @@
                     ~0: An error code
 
 ------------------------------------------------------------------------*/
-int rvi_list_initialize ( rvi_list* list )
+int rviListInitialize ( TRviList* list )
 {
     int status = 0;
 
@@ -63,15 +63,15 @@ int rvi_list_initialize ( rvi_list* list )
                     ~0: An error code
 
 ------------------------------------------------------------------------*/
-int rvi_list_insert ( rvi_list* list, void* record )
+int rviListInsert ( TRviList* list, void* record )
 {
-    rvi_list_entry* newEntry;
+    TRviListEntry* newEntry;
     int status = 0;
 
     //
     //  Create a new list entry object.
     //
-    newEntry = malloc ( sizeof(rvi_list_entry) );
+    newEntry = malloc ( sizeof(TRviListEntry) );
     if ( !newEntry )
     {
         return -ENOMEM;
@@ -129,10 +129,10 @@ int rvi_list_insert ( rvi_list* list, void* record )
                     ~0: An error code
 
 ------------------------------------------------------------------------*/
-int rvi_list_remove ( rvi_list* list, void* record )
+int rviListRemove ( TRviList* list, void* record )
 {
-    rvi_list_entry* current  = list->listHead;
-    rvi_list_entry* previous = NULL;
+    TRviListEntry* current  = list->listHead;
+    TRviListEntry* previous = NULL;
     int             status   = 0;
 
     //
@@ -215,9 +215,9 @@ int rvi_list_remove ( rvi_list* list, void* record )
                     ~0: An error code
 
 ------------------------------------------------------------------------*/
-int rvi_list_remove_head ( rvi_list* list, void** record )
+int rviListRemoveHead ( TRviList* list, void** record )
 {
-    rvi_list_entry* head;
+    TRviListEntry* head;
     int             status = 0;
 
     //
