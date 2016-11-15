@@ -31,7 +31,7 @@ INSTALL_PATH ?= /usr
 
 # Specify default target before including any other files
 
-default: libs
+default: jwt libs
 
 # Include the description for each module
 include $(patsubst %,%/module.mk,$(MODULES))
@@ -54,20 +54,25 @@ examples: $(TARGET)
 
 .SILENT:
 # Build the shared libraries
-libs: $(foreach var,$(MODLIB),$(INCLUDE_$(var))) 
+libs: jwt $(foreach var,$(MODLIB),$(INCLUDE_$(var))) 
 	echo "Building library in" $(LLIBDIR) "..."; \
 	mkdir -p $(LLIBDIR); \
 	$(foreach var,$(MODLIB),$(CC) $(CFLAGS) -shared \
 		-o $(LLIBDIR)/lib$(var).so $(INCLUDE_$(var)) \
-		$(LDFLAGS) $(LIBS_$(var));) 
+		$(LDFLAGS) $(LIBS_$(var));)
+
+jwt: 
+	cd libjwt; \
+		cmake -DCMAKE_INSTALL_PREFIX:PATH=$(INSTALL_PATH) .; make; 
 
 # Link the program
 $(TARGET): $(OBJ) libs
 	echo "Building the executable in" $(LBINDIR) "..."; \
 	$(CC) -o $@ $(OBJ) $(CFLAGS) $(LDFLAGS)  $(LIBS) \
-		$(SHAREDLIBS); rm -rf *.o */*.o
+		$(SHAREDLIBS)
 
 install: libs 
+	cd libjwt; make install; cd ..; \
 	echo -- Installing: $(INSTALL_PATH)/lib/librvi.so;\
 	cp $(LLIBDIR)/librvi.so $(INSTALL_PATH)/lib;\
 	echo -- Installing: $(INSTALL_PATH)/include/rvi.h;\
@@ -78,4 +83,4 @@ docs: Doxyfile $(INCLUDES)
 	doxygen ./Doxyfile
 
 clean distclean:
-	rm -rf *.o */*.o *~ build docs $(TARGET)
+	rm -rf *.o */*.o *~ build docs $(TARGET); cd libjwt; make clean;
