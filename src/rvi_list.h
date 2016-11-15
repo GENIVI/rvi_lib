@@ -10,33 +10,33 @@
 #ifndef _RVI_LIST_H_
 #define _RVI_LIST_H_
 
-typedef struct rvi_list_entry
+typedef struct TRviListEntry
 {
-    struct rvi_list_entry* next;
+    struct TRviListEntry* next;
     void*                  pointer;
 
-}   rvi_list_entry;
+}   TRviListEntry;
 
 
-typedef struct rvi_list
+typedef struct TRviList
 {
-    rvi_list_entry* listHead;
-    rvi_list_entry* listTail;
+    TRviListEntry* listHead;
+    TRviListEntry* listTail;
 
     unsigned int    count;
 
-}   rvi_list;
+}   TRviList;
 
 
-int rvi_list_initialize ( rvi_list* list );
+int rviListInitialize ( TRviList* list );
 
-int rvi_list_insert ( rvi_list* list, void* record );
+int rviListInsert ( TRviList* list, void* record );
 
-int rvi_list_remove ( rvi_list* list, void* record );
+int rviListRemove ( TRviList* list, void* record );
 
-int rvi_list_remove_head ( rvi_list* list, void** record );
+int rviListRemoveHead ( TRviList* list, void** record );
 
-inline unsigned int rvi_list_get_count ( rvi_list* list )
+inline unsigned int rviListGetCount ( TRviList* list )
 {
     return list->count;
 }

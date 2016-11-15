@@ -77,7 +77,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">REMOTE VEHICLE INTERFACE </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>**(C) 2016 Jaguar Land Rover - All rights reserved.**</p>
+<div class="textblock"><p><a href="https://travis-ci.org/tjamison/rvi_lib"></a></p>
+<p>**(C) 2016 Jaguar Land Rover - All rights reserved.**</p>
 <p>All documents in this repository are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0). Click <a href="https://creativecommons.org/licenses/by/4.0/">here</a> for details. All code in this repository is licensed under Mozilla Public License v2 (MPLv2). Click <a href="https://www.mozilla.org/en-US/MPL/2.0/">here</a> for details.</p>
 <p>Remote Vehicle Interface (RVI) provides an architecture which, through its specified components, enables connected vehicles and other devices to form a secured distributed, sparsely connected peer-to-peer network. In particular, local services can be registered to enable remote invocation only when the peer presents appropriate credentials. In general, RVI provides an intermediary between less trusted remote sources and more trusted internal sources, limiting information that crosses trust boundaries.</p>
 <p><code>rvi_lib</code> provides a client implementation in C. This is supplemental to <a href="https://github.com/GENIVI/rvi_core">RVI Core</a>, which adds a variety of capabilities including server behaviors.</p>
@@ -129,6 +130,7 @@ $ make
 $ cd examples
 $ ./interactive
 </pre><p>Initiating the RVI context requires a configuration file, along with X.509 certificates and one or more JWT credentials. See the "Configuration" section for details on configuring your own, or use the "conf.json" file for the pre-supplied (<em>insecure</em>) configuration.</p>
+<p>Connect to a remote test RVI node at 38.129.64.41, port 9010. You can register services, invoke remote services, and process incoming messages.</p>
 <p>Insecure configuration details, including private keys and certificates, are provided in the [examples](examples) folder. _*THESE CREDENTIALS MUST NOT BE USED IN PRODUCTION*_.</p>
 <h1>Configuration</h1>
 <p>When used in a calling application (such as the example "interactive" program), <code>rvi_lib</code> requires the client to be configured with a valid X.509 certificate for TLS exchanges, as well as (at least one) JWT-encoded RVI credential that matches the client's X.509 certificate.</p>
@@ -204,7 +206,7 @@ and CSR" and "Sign the CSR" steps above for the server. See <a href="https://git
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Sep 29 2016 15:28:30 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Nov 15 2016 09:14:25 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

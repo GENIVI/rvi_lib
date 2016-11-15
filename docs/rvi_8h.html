@@ -100,63 +100,63 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a63d2dc7d883ab661ab33c00ace2b977b"><td class="memItemLeft" align="right" valign="top">typedef void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a></td></tr>
-<tr class="separator:a63d2dc7d883ab661ab33c00ace2b977b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a698fa196587b478a0c75b2e3b105a1"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a0a698fa196587b478a0c75b2e3b105a1">rvi_callback_t</a>) (int fd, void *service_data, const char *parameters)</td></tr>
-<tr class="separator:a0a698fa196587b478a0c75b2e3b105a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac78b62a65c4f2e17a64f3841aa1555e1"><td class="memItemLeft" align="right" valign="top">typedef void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a></td></tr>
+<tr class="separator:ac78b62a65c4f2e17a64f3841aa1555e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ce1ba1e3026470b887b160a5e1d13cc"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a5ce1ba1e3026470b887b160a5e1d13cc">TRviCallback</a>) (int fd, void *serviceData, const char *parameters)</td></tr>
+<tr class="separator:a5ce1ba1e3026470b887b160a5e1d13cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:aa08586f2ff8728820f813870cb08852a"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852a">rvi_status</a> { <br />
-&#160;&#160;<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aa5cf5fd72d4f029a41252d7a4da616876">RVI_OK</a> = 0, 
-<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aafc1669c8fcb43d5e26b5f27b38919050">RVI_ERR_OPENSSL</a> = 100, 
-<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aa361dfcd7d313967375342b4b763d3c1b">RVI_ERR_NOCONFIG</a> = 1001, 
-<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aa568f843abd268eaaebe2e980abd9714f">RVI_ERR_JSON</a> = 1002, 
+<tr class="memitem:aeed1da6c6f4f94d99f37d7ac1ac71ddb"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddb">ERviStatus</a> { <br />
+&#160;&#160;<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddba5cf5fd72d4f029a41252d7a4da616876">RVI_OK</a> = 0, 
+<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddbafc1669c8fcb43d5e26b5f27b38919050">RVI_ERR_OPENSSL</a> = 100, 
+<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddba361dfcd7d313967375342b4b763d3c1b">RVI_ERR_NOCONFIG</a> = 1001, 
+<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddba568f843abd268eaaebe2e980abd9714f">RVI_ERR_JSON</a> = 1002, 
 <br />
-&#160;&#160;<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aae057e884cf9ac810224d4146729aa67e">RVI_ERR_SERVCERT</a> = 1003, 
-<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aafd47a7d0e4041c819c0974f873b9c80c">RVI_ERR_CLIENTCERT</a> = 1004, 
-<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aa7ff56995cc8ba07c087868a82a1ae614">RVI_ERR_NORCVCERT</a> = 1005, 
-<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aa557a1374709953e1bc6cc42fa1064ed0">RVI_ERR_STREAMEND</a> = 1006, 
+&#160;&#160;<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddbae057e884cf9ac810224d4146729aa67e">RVI_ERR_SERVCERT</a> = 1003, 
+<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddbafd47a7d0e4041c819c0974f873b9c80c">RVI_ERR_CLIENTCERT</a> = 1004, 
+<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddba7ff56995cc8ba07c087868a82a1ae614">RVI_ERR_NORCVCERT</a> = 1005, 
+<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddba557a1374709953e1bc6cc42fa1064ed0">RVI_ERR_STREAMEND</a> = 1006, 
 <br />
-&#160;&#160;<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aa0445312b4f9444564313242404481481">RVI_ERR_NOCRED</a> = 1007, 
-<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aa8e509d3cc8c9fc2a9e02d3d3d156b0af">RVI_ERR_NOCMD</a> = 1008, 
-<a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852aaee7a5d33e64ebb2a58666fd3ce96eecd">RVI_ERR_RIGHTS</a> = 1009
+&#160;&#160;<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddba0445312b4f9444564313242404481481">RVI_ERR_NOCRED</a> = 1007, 
+<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddba8e509d3cc8c9fc2a9e02d3d3d156b0af">RVI_ERR_NOCMD</a> = 1008, 
+<a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddbaee7a5d33e64ebb2a58666fd3ce96eecd">RVI_ERR_RIGHTS</a> = 1009
 <br />
  }</td></tr>
-<tr class="separator:aa08586f2ff8728820f813870cb08852a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:aeed1da6c6f4f94d99f37d7ac1ac71ddb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ae6877407152e2751e84f911b46a60ca4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#ae6877407152e2751e84f911b46a60ca4">rvi_init</a> (char *config_filename)</td></tr>
-<tr class="memdesc:ae6877407152e2751e84f911b46a60ca4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the RVI library. Call before using any other functions.  <a href="#ae6877407152e2751e84f911b46a60ca4">More...</a><br /></td></tr>
-<tr class="separator:ae6877407152e2751e84f911b46a60ca4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc04e7f140189d22ccc01228c6be2c42"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#acc04e7f140189d22ccc01228c6be2c42">rvi_cleanup</a> (<a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> handle)</td></tr>
-<tr class="memdesc:acc04e7f140189d22ccc01228c6be2c42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tear down the API.  <a href="#acc04e7f140189d22ccc01228c6be2c42">More...</a><br /></td></tr>
-<tr class="separator:acc04e7f140189d22ccc01228c6be2c42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10764db330a19b844742bebffc659753"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a10764db330a19b844742bebffc659753">rvi_connect</a> (<a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> handle, const char *addr, const char *port)</td></tr>
-<tr class="memdesc:a10764db330a19b844742bebffc659753"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connect to a remote node at a specified address and port.  <a href="#a10764db330a19b844742bebffc659753">More...</a><br /></td></tr>
-<tr class="separator:a10764db330a19b844742bebffc659753"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6170d627439c13785c0bfd1a9e97f145"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a6170d627439c13785c0bfd1a9e97f145">rvi_disconnect</a> (<a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> handle, int fd)</td></tr>
-<tr class="memdesc:a6170d627439c13785c0bfd1a9e97f145"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disconnect from a remote node with a specified file descriptor.  <a href="#a6170d627439c13785c0bfd1a9e97f145">More...</a><br /></td></tr>
-<tr class="separator:a6170d627439c13785c0bfd1a9e97f145"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35332a20a4e3ec5623fb20fba728d3c0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a35332a20a4e3ec5623fb20fba728d3c0">rvi_get_connections</a> (<a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> handle, int *conn, int *conn_size)</td></tr>
-<tr class="memdesc:a35332a20a4e3ec5623fb20fba728d3c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return all file descriptors in the RVI context.  <a href="#a35332a20a4e3ec5623fb20fba728d3c0">More...</a><br /></td></tr>
-<tr class="separator:a35332a20a4e3ec5623fb20fba728d3c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abf4937a7c82e76706c3583b631fe6201"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#abf4937a7c82e76706c3583b631fe6201">rvi_register_service</a> (<a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> handle, const char *service_name, <a class="el" href="rvi_8h.html#a0a698fa196587b478a0c75b2e3b105a1">rvi_callback_t</a> callback, void *service_data, size_t n)</td></tr>
-<tr class="memdesc:abf4937a7c82e76706c3583b631fe6201"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register a service with a callback function.  <a href="#abf4937a7c82e76706c3583b631fe6201">More...</a><br /></td></tr>
-<tr class="separator:abf4937a7c82e76706c3583b631fe6201"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adb942921631524962ef394ed4d1e42d9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#adb942921631524962ef394ed4d1e42d9">rvi_unregister_service</a> (<a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> handle, const char *service_name)</td></tr>
-<tr class="memdesc:adb942921631524962ef394ed4d1e42d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unregister a previously registered service.  <a href="#adb942921631524962ef394ed4d1e42d9">More...</a><br /></td></tr>
-<tr class="separator:adb942921631524962ef394ed4d1e42d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9fc0ac94f964cd989fc65e3c7ea0b2d3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a9fc0ac94f964cd989fc65e3c7ea0b2d3">rvi_get_services</a> (<a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> handle, char **result, int *len)</td></tr>
-<tr class="memdesc:a9fc0ac94f964cd989fc65e3c7ea0b2d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get list of services available.  <a href="#a9fc0ac94f964cd989fc65e3c7ea0b2d3">More...</a><br /></td></tr>
-<tr class="separator:a9fc0ac94f964cd989fc65e3c7ea0b2d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca2164184c018259f9e6740849efaf8e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#aca2164184c018259f9e6740849efaf8e">rvi_invoke_remote_service</a> (<a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> handle, const char *service_name, const char *parameters)</td></tr>
-<tr class="memdesc:aca2164184c018259f9e6740849efaf8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Invoke a remote service.  <a href="#aca2164184c018259f9e6740849efaf8e">More...</a><br /></td></tr>
-<tr class="separator:aca2164184c018259f9e6740849efaf8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a21384a0a4e3411ddc19cc0fd7d4f42a8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a21384a0a4e3411ddc19cc0fd7d4f42a8">rvi_process_input</a> (<a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> handle, int *fd_arr, int fd_len)</td></tr>
-<tr class="memdesc:a21384a0a4e3411ddc19cc0fd7d4f42a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle input on remote connection(s).  <a href="#a21384a0a4e3411ddc19cc0fd7d4f42a8">More...</a><br /></td></tr>
-<tr class="separator:a21384a0a4e3411ddc19cc0fd7d4f42a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d7cd26c745770781ea03547596faf32"><td class="memItemLeft" align="right" valign="top"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a8d7cd26c745770781ea03547596faf32">rviInit</a> (char *configFilename)</td></tr>
+<tr class="memdesc:a8d7cd26c745770781ea03547596faf32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the RVI library. Call before using any other functions.  <a href="#a8d7cd26c745770781ea03547596faf32">More...</a><br /></td></tr>
+<tr class="separator:a8d7cd26c745770781ea03547596faf32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb87e68e1dac66c8fa2800cc7dfdb20c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#adb87e68e1dac66c8fa2800cc7dfdb20c">rviCleanup</a> (<a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> handle)</td></tr>
+<tr class="memdesc:adb87e68e1dac66c8fa2800cc7dfdb20c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tear down the API.  <a href="#adb87e68e1dac66c8fa2800cc7dfdb20c">More...</a><br /></td></tr>
+<tr class="separator:adb87e68e1dac66c8fa2800cc7dfdb20c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6600e35ef71734da8db7a3a9d9a44990"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a6600e35ef71734da8db7a3a9d9a44990">rviConnect</a> (<a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> handle, const char *addr, const char *port)</td></tr>
+<tr class="memdesc:a6600e35ef71734da8db7a3a9d9a44990"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connect to a remote node at a specified address and port.  <a href="#a6600e35ef71734da8db7a3a9d9a44990">More...</a><br /></td></tr>
+<tr class="separator:a6600e35ef71734da8db7a3a9d9a44990"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e88293753962ee1f4c71fdf43696bfa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a2e88293753962ee1f4c71fdf43696bfa">rviDisconnect</a> (<a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> handle, int fd)</td></tr>
+<tr class="memdesc:a2e88293753962ee1f4c71fdf43696bfa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disconnect from a remote node with a specified file descriptor.  <a href="#a2e88293753962ee1f4c71fdf43696bfa">More...</a><br /></td></tr>
+<tr class="separator:a2e88293753962ee1f4c71fdf43696bfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cbb737c19f0da2816bd47fe0d4b6bbf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a3cbb737c19f0da2816bd47fe0d4b6bbf">rviGetConnections</a> (<a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> handle, int *conn, int *connSize)</td></tr>
+<tr class="memdesc:a3cbb737c19f0da2816bd47fe0d4b6bbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return all file descriptors in the RVI context.  <a href="#a3cbb737c19f0da2816bd47fe0d4b6bbf">More...</a><br /></td></tr>
+<tr class="separator:a3cbb737c19f0da2816bd47fe0d4b6bbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7970c18bcaab43094992b75124dfbbca"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a7970c18bcaab43094992b75124dfbbca">rviRegisterService</a> (<a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> handle, const char *serviceName, <a class="el" href="rvi_8h.html#a5ce1ba1e3026470b887b160a5e1d13cc">TRviCallback</a> callback, void *serviceData, size_t dataSize)</td></tr>
+<tr class="memdesc:a7970c18bcaab43094992b75124dfbbca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register a service with a callback function.  <a href="#a7970c18bcaab43094992b75124dfbbca">More...</a><br /></td></tr>
+<tr class="separator:a7970c18bcaab43094992b75124dfbbca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a179f0b006746cfb7ffa643e7e39bb142"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a179f0b006746cfb7ffa643e7e39bb142">rviUnregisterService</a> (<a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> handle, const char *serviceName)</td></tr>
+<tr class="memdesc:a179f0b006746cfb7ffa643e7e39bb142"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unregister a previously registered service.  <a href="#a179f0b006746cfb7ffa643e7e39bb142">More...</a><br /></td></tr>
+<tr class="separator:a179f0b006746cfb7ffa643e7e39bb142"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a1b2d9dce2123198fa75a5d66b8ecd3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a1a1b2d9dce2123198fa75a5d66b8ecd3">rviGetServices</a> (<a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> handle, char **result, int *len)</td></tr>
+<tr class="memdesc:a1a1b2d9dce2123198fa75a5d66b8ecd3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get list of services available.  <a href="#a1a1b2d9dce2123198fa75a5d66b8ecd3">More...</a><br /></td></tr>
+<tr class="separator:a1a1b2d9dce2123198fa75a5d66b8ecd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a429680d590cfe541114232b62fb0ff58"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a429680d590cfe541114232b62fb0ff58">rviInvokeService</a> (<a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> handle, const char *serviceName, const char *parameters)</td></tr>
+<tr class="memdesc:a429680d590cfe541114232b62fb0ff58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Invoke a remote service.  <a href="#a429680d590cfe541114232b62fb0ff58">More...</a><br /></td></tr>
+<tr class="separator:a429680d590cfe541114232b62fb0ff58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f36294f32f87d64e14a03aeb60c4f66"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rvi_8h.html#a7f36294f32f87d64e14a03aeb60c4f66">rviProcessInput</a> (<a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> handle, int *fdArr, int fdLen)</td></tr>
+<tr class="memdesc:a7f36294f32f87d64e14a03aeb60c4f66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle input on remote connection(s).  <a href="#a7f36294f32f87d64e14a03aeb60c4f66">More...</a><br /></td></tr>
+<tr class="separator:a7f36294f32f87d64e14a03aeb60c4f66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Remote Vehicle Interaction library. </p>
@@ -171,12 +171,12 @@ Functions</h2></td></tr>
 <p>mpack: <a href="http://ludocode.github.io/mpack/">http://ludocode.github.io/mpack/</a></p>
 <dl class="section author"><dt>Author</dt><dd>Tatiana Jamison &lt;<a href="#" onclick="location.href='mai'+'lto:'+'tja'+'mi'+'son'+'@j'+'agu'+'ar'+'lan'+'dr'+'ove'+'r.'+'com'; return false;">tjami<span style="display: none;">.nosp@m.</span>son@<span style="display: none;">.nosp@m.</span>jagua<span style="display: none;">.nosp@m.</span>rlan<span style="display: none;">.nosp@m.</span>drove<span style="display: none;">.nosp@m.</span>r.co<span style="display: none;">.nosp@m.</span>m</a>&gt; </dd></dl>
 </div><h2 class="groupheader">Typedef Documentation</h2>
-<a class="anchor" id="a0a698fa196587b478a0c75b2e3b105a1"></a>
+<a class="anchor" id="a5ce1ba1e3026470b887b160a5e1d13cc"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* rvi_callback_t) (int fd, void *service_data, const char *parameters)</td>
+          <td class="memname">typedef void(* TRviCallback) (int fd, void *serviceData, const char *parameters)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -184,12 +184,12 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a63d2dc7d883ab661ab33c00ace2b977b"></a>
+<a class="anchor" id="ac78b62a65c4f2e17a64f3841aa1555e1"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void* <a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a></td>
+          <td class="memname">typedef void* <a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -198,48 +198,48 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
-<a class="anchor" id="aa08586f2ff8728820f813870cb08852a"></a>
+<a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddb"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="rvi_8h.html#aa08586f2ff8728820f813870cb08852a">rvi_status</a></td>
+          <td class="memname">enum <a class="el" href="rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddb">ERviStatus</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>Function return status codes </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aa5cf5fd72d4f029a41252d7a4da616876"></a>RVI_OK&#160;</td><td class="fielddoc">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddba5cf5fd72d4f029a41252d7a4da616876"></a>RVI_OK&#160;</td><td class="fielddoc">
 <p>Success </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aafc1669c8fcb43d5e26b5f27b38919050"></a>RVI_ERR_OPENSSL&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddbafc1669c8fcb43d5e26b5f27b38919050"></a>RVI_ERR_OPENSSL&#160;</td><td class="fielddoc">
 <p>Unhandled error from OpenSSL </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aa361dfcd7d313967375342b4b763d3c1b"></a>RVI_ERR_NOCONFIG&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddba361dfcd7d313967375342b4b763d3c1b"></a>RVI_ERR_NOCONFIG&#160;</td><td class="fielddoc">
 <p>Configuration error </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aa568f843abd268eaaebe2e980abd9714f"></a>RVI_ERR_JSON&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddba568f843abd268eaaebe2e980abd9714f"></a>RVI_ERR_JSON&#160;</td><td class="fielddoc">
 <p>Error in JSON </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aae057e884cf9ac810224d4146729aa67e"></a>RVI_ERR_SERVCERT&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddbae057e884cf9ac810224d4146729aa67e"></a>RVI_ERR_SERVCERT&#160;</td><td class="fielddoc">
 <p>Server certificate is missing </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aafd47a7d0e4041c819c0974f873b9c80c"></a>RVI_ERR_CLIENTCERT&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddbafd47a7d0e4041c819c0974f873b9c80c"></a>RVI_ERR_CLIENTCERT&#160;</td><td class="fielddoc">
 <p>Client certificate is missing </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aa7ff56995cc8ba07c087868a82a1ae614"></a>RVI_ERR_NORCVCERT&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddba7ff56995cc8ba07c087868a82a1ae614"></a>RVI_ERR_NORCVCERT&#160;</td><td class="fielddoc">
 <p>Client did not receive server cert </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aa557a1374709953e1bc6cc42fa1064ed0"></a>RVI_ERR_STREAMEND&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddba557a1374709953e1bc6cc42fa1064ed0"></a>RVI_ERR_STREAMEND&#160;</td><td class="fielddoc">
 <p>Stream end encountered unexpectedly </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aa0445312b4f9444564313242404481481"></a>RVI_ERR_NOCRED&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddba0445312b4f9444564313242404481481"></a>RVI_ERR_NOCRED&#160;</td><td class="fielddoc">
 <p>No credentials </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aa8e509d3cc8c9fc2a9e02d3d3d156b0af"></a>RVI_ERR_NOCMD&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddba8e509d3cc8c9fc2a9e02d3d3d156b0af"></a>RVI_ERR_NOCMD&#160;</td><td class="fielddoc">
 <p>No (known) command </p>
 </td></tr>
-<tr><td class="fieldname"><a class="anchor" id="aa08586f2ff8728820f813870cb08852aaee7a5d33e64ebb2a58666fd3ce96eecd"></a>RVI_ERR_RIGHTS&#160;</td><td class="fielddoc">
+<tr><td class="fieldname"><a class="anchor" id="aeed1da6c6f4f94d99f37d7ac1ac71ddbaee7a5d33e64ebb2a58666fd3ce96eecd"></a>RVI_ERR_RIGHTS&#160;</td><td class="fielddoc">
 <p>No right for that operation </p>
 </td></tr>
 </table>
@@ -247,14 +247,14 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a class="anchor" id="acc04e7f140189d22ccc01228c6be2c42"></a>
+<a class="anchor" id="adb87e68e1dac66c8fa2800cc7dfdb20c"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int rvi_cleanup </td>
+          <td class="memname">int rviCleanup </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td>
           <td class="paramname"><em>handle</em></td><td>)</td>
           <td></td>
         </tr>
@@ -273,14 +273,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a10764db330a19b844742bebffc659753"></a>
+<a class="anchor" id="a6600e35ef71734da8db7a3a9d9a44990"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int rvi_connect </td>
+          <td class="memname">int rviConnect </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td>
           <td class="paramname"><em>handle</em>, </td>
         </tr>
         <tr>
@@ -305,7 +305,7 @@ Functions</h2></td></tr>
 
 <p>Connect to a remote node at a specified address and port. </p>
 <p>This function will attempt to connect to a remote node at the specified addr and port. It will spawn a new connection and block until all handshake and RVI negotiations are complete. On success, it will return the file descriptor for the new socket. On failure, it will return a negative error value.</p>
-<p>New services may become immediately available upon connecting to a remote node. To discover the services that are currently available, use the <a class="el" href="rvi_8h.html#a9fc0ac94f964cd989fc65e3c7ea0b2d3" title="Get list of services available. ">rvi_get_services()</a> function. Services may be invoked via <a class="el" href="rvi_8h.html#aca2164184c018259f9e6740849efaf8e" title="Invoke a remote service. ">rvi_invoke_remote_service()</a> using the fully-qualified service name.</p>
+<p>New services may become immediately available upon connecting to a remote node. To discover the services that are currently available, use the <a class="el" href="rvi_8h.html#a1a1b2d9dce2123198fa75a5d66b8ecd3" title="Get list of services available. ">rviGetServices()</a> function. Services may be invoked via <a class="el" href="rvi_8h.html#a429680d590cfe541114232b62fb0ff58" title="Invoke a remote service. ">rviInvokeService()</a> using the fully-qualified service name.</p>
 <p>This operation will block until all TLS read/write operations are complete.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -319,14 +319,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a6170d627439c13785c0bfd1a9e97f145"></a>
+<a class="anchor" id="a2e88293753962ee1f4c71fdf43696bfa"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int rvi_disconnect </td>
+          <td class="memname">int rviDisconnect </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td>
           <td class="paramname"><em>handle</em>, </td>
         </tr>
         <tr>
@@ -355,14 +355,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a35332a20a4e3ec5623fb20fba728d3c0"></a>
+<a class="anchor" id="a3cbb737c19f0da2816bd47fe0d4b6bbf"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int rvi_get_connections </td>
+          <td class="memname">int rviGetConnections </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td>
           <td class="paramname"><em>handle</em>, </td>
         </tr>
         <tr>
@@ -375,7 +375,7 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>conn_size</em>&#160;</td>
+          <td class="paramname"><em>connSize</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -390,24 +390,24 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">handle</td><td>- The handle to the RVI context. </td></tr>
     <tr><td class="paramname">conn</td><td>- Pointer to a buffer to store file descriptors (small integers) for each remote RVI node. </td></tr>
-    <tr><td class="paramname">conn_size</td><td>- Pointer to size of 'conn' buffer. This should be initialized to the size of the conn buffer. On success, it will be updated with the number of file descriptors returned.</td></tr>
+    <tr><td class="paramname">connSize</td><td>- Pointer to size of 'conn' buffer. This should be initialized to the size of the conn buffer. On success, it will be updated with the number of file descriptors returned.</td></tr>
   </table>
   </dd>
 </dl>
-<p>This function will fill the conn buffer with active file descriptors from the RVI context and update conn_size to indicate the final size.</p>
+<p>This function will fill the conn buffer with active file descriptors from the RVI context and update connSize to indicate the final size.</p>
 <p>This operation is entirely local.</p>
 <dl class="section return"><dt>Returns</dt><dd>0 on success, error code otherwise. </dd></dl>
 
 </div>
 </div>
-<a class="anchor" id="a9fc0ac94f964cd989fc65e3c7ea0b2d3"></a>
+<a class="anchor" id="a1a1b2d9dce2123198fa75a5d66b8ecd3"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int rvi_get_services </td>
+          <td class="memname">int rviGetServices </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td>
           <td class="paramname"><em>handle</em>, </td>
         </tr>
         <tr>
@@ -445,15 +445,15 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="ae6877407152e2751e84f911b46a60ca4"></a>
+<a class="anchor" id="a8d7cd26c745770781ea03547596faf32"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a> rvi_init </td>
+          <td class="memname"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a> rviInit </td>
           <td>(</td>
           <td class="paramtype">char *&#160;</td>
-          <td class="paramname"><em>config_filename</em></td><td>)</td>
+          <td class="paramname"><em>configFilename</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -476,7 +476,7 @@ Functions</h2></td></tr>
 <p>The ID format is "domain/device-type/uuid".</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">config_filename</td><td>- Path to the file containing RVI config options.</td></tr>
+    <tr><td class="paramname">configFilename</td><td>- Path to the file containing RVI config options.</td></tr>
   </table>
   </dd>
 </dl>
@@ -484,21 +484,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="aca2164184c018259f9e6740849efaf8e"></a>
+<a class="anchor" id="a429680d590cfe541114232b62fb0ff58"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int rvi_invoke_remote_service </td>
+          <td class="memname">int rviInvokeService </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td>
           <td class="paramname"><em>handle</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>service_name</em>, </td>
+          <td class="paramname"><em>serviceName</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -515,13 +515,13 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Invoke a remote service. </p>
-<p>The service name must be the fully-qualified service name (as returned by, e.g., <a class="el" href="rvi_8h.html#a9fc0ac94f964cd989fc65e3c7ea0b2d3" title="Get list of services available. ">rvi_get_services()</a>). The service may be passed parameters in the form of a JSON object containing key-value pairs. Parameters are optional.</p>
+<p>The service name must be the fully-qualified service name (as returned by, e.g., <a class="el" href="rvi_8h.html#a1a1b2d9dce2123198fa75a5d66b8ecd3" title="Get list of services available. ">rviGetServices()</a>). The service may be passed parameters in the form of a JSON object containing key-value pairs. Parameters are optional.</p>
 <p>Introspection of RVI services is not supported as of the 0.5.0 release, so refer to the documentation on the services you intend to invoke to determine which parameters (if any) to pass.</p>
 <p>This will send the RVI command over TLS to the remote node. The operation will block until all SSL read/write operations are complete.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>- The handle to the RVI context. </td></tr>
-    <tr><td class="paramname">service_name</td><td>- The fully-qualified service name to invoke </td></tr>
+    <tr><td class="paramname">serviceName</td><td>- The fully-qualified service name to invoke </td></tr>
     <tr><td class="paramname">parameters</td><td>- A JSON structure containing the named parameter pairs</td></tr>
   </table>
   </dd>
@@ -530,27 +530,27 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a21384a0a4e3411ddc19cc0fd7d4f42a8"></a>
+<a class="anchor" id="a7f36294f32f87d64e14a03aeb60c4f66"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int rvi_process_input </td>
+          <td class="memname">int rviProcessInput </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td>
           <td class="paramname"><em>handle</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>fd_arr</em>, </td>
+          <td class="paramname"><em>fdArr</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>fd_len</em>&#160;</td>
+          <td class="paramname"><em>fdLen</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -561,14 +561,14 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Handle input on remote connection(s). </p>
-<p>This function will read data from each of the file descriptors in fd_arr (up to fd_len elements long). The calling application must ensure that fd_arr is populated only with read-ready descriptors (returned by, e.g., (e)poll() or select()).</p>
+<p>This function will read data from each of the file descriptors in fdArr (up to fdLen elements long). The calling application must ensure that fdArr is populated only with read-ready descriptors (returned by, e.g., (e)poll() or select()).</p>
 <p>This operation will read one message from each file descriptor provided. The calling application should poll using a level trigger, since multiple messages may be pending on a single connection.</p>
-<p>This is a blocking operation. If any descriptor in fd_arr is not read-ready, the operation will block until data becomes available to read on the descriptor.</p>
+<p>This is a blocking operation. If any descriptor in fdArr is not read-ready, the operation will block until data becomes available to read on the descriptor.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>- The handle to the RVI context. </td></tr>
-    <tr><td class="paramname">fd_arr</td><td>- An array of file descriptors with read operations pending </td></tr>
-    <tr><td class="paramname">fd_len</td><td>- The length of the file descriptor array</td></tr>
+    <tr><td class="paramname">fdArr</td><td>- An array of file descriptors with read operations pending </td></tr>
+    <tr><td class="paramname">fdLen</td><td>- The length of the file descriptor array</td></tr>
   </table>
   </dd>
 </dl>
@@ -576,39 +576,39 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="abf4937a7c82e76706c3583b631fe6201"></a>
+<a class="anchor" id="a7970c18bcaab43094992b75124dfbbca"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int rvi_register_service </td>
+          <td class="memname">int rviRegisterService </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td>
           <td class="paramname"><em>handle</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>service_name</em>, </td>
+          <td class="paramname"><em>serviceName</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a0a698fa196587b478a0c75b2e3b105a1">rvi_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#a5ce1ba1e3026470b887b160a5e1d13cc">TRviCallback</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>service_data</em>, </td>
+          <td class="paramname"><em>serviceData</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>n</em>&#160;</td>
+          <td class="paramname"><em>dataSize</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -624,10 +624,10 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>- The handle to the RVI context. </td></tr>
-    <tr><td class="paramname">service_name</td><td>- The service name to register </td></tr>
+    <tr><td class="paramname">serviceName</td><td>- The service name to register </td></tr>
     <tr><td class="paramname">callback</td><td>- The callback function to be executed upon service invocation. </td></tr>
-    <tr><td class="paramname">service_data</td><td>- Parameters to be passed to the callback function (in addition to any JSON parameters from the remote node) </td></tr>
-    <tr><td class="paramname">n</td><td>- Size of service_data</td></tr>
+    <tr><td class="paramname">serviceData</td><td>- Parameters to be passed to the callback function (in addition to any JSON parameters from the remote node) </td></tr>
+    <tr><td class="paramname">dataSize</td><td>- Size of serviceData</td></tr>
   </table>
   </dd>
 </dl>
@@ -635,21 +635,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="adb942921631524962ef394ed4d1e42d9"></a>
+<a class="anchor" id="a179f0b006746cfb7ffa643e7e39bb142"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int rvi_unregister_service </td>
+          <td class="memname">int rviUnregisterService </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="rvi_8h.html#a63d2dc7d883ab661ab33c00ace2b977b">rvi_handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="rvi_8h.html#ac78b62a65c4f2e17a64f3841aa1555e1">TRviHandle</a>&#160;</td>
           <td class="paramname"><em>handle</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>service_name</em>&#160;</td>
+          <td class="paramname"><em>serviceName</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -660,12 +660,12 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Unregister a previously registered service. </p>
-<p>This function unregisters a service that was previously registered by the calling application. If service_name does not exist, or was registered by a remote node, it does nothing and returns an error code.</p>
+<p>This function unregisters a service that was previously registered by the calling application. If serviceName does not exist, or was registered by a remote node, it does nothing and returns an error code.</p>
 <p>This will also notify all remote nodes that could have invoked the service, based on credentials presented to this node. The operation will block until all SSL read/write operations are complete.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>- The handle to the RVI context </td></tr>
-    <tr><td class="paramname">service_name</td><td>The fully-qualified service name to deregister</td></tr>
+    <tr><td class="paramname">serviceName</td><td>The fully-qualified service name to deregister</td></tr>
   </table>
   </dd>
 </dl>
@@ -676,7 +676,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Sep 29 2016 15:28:30 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Nov 15 2016 09:14:25 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>
