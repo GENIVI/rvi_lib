@@ -730,7 +730,10 @@ int rviRightToReceiveError( TRviList *rlist, const char *serviceName )
     while( ptr ) {
         TRviRights *tmp = (TRviRights *)ptr->pointer;
         if( !tmp ) goto exit;
-        json_array_foreach( tmp->receive, index, value ) {
+        //json_array_foreach( tmp->receive, index, value ) {
+        for( index = 0; 
+             index < json_array_size( tmp->receive ) && ( value = json_array_get( tmp->receive, index ) ); 
+             index ++) {
             const char *pattern = json_string_value( value );
             if( ( err = rviComparePattern( pattern, serviceName ) ) == RVI_OK )
                 goto exit; /* We found a match, exit immediately */
@@ -753,7 +756,10 @@ int rviRightToInvokeError( TRviList *rlist, const char *serviceName )
     TRviListEntry *ptr = rlist->listHead;
     while( ptr ) {
         TRviRights *tmp = (TRviRights *)ptr->pointer;
-        json_array_foreach( tmp->invoke, index, value ) {
+        //json_array_foreach( tmp->invoke, index, value ) {
+        for( index = 0; 
+             index < json_array_size( tmp->invoke ) && ( value = json_array_get( tmp->invoke, index ) ); 
+             index ++) {
             const char *pattern = json_string_value( value );
             if( ( err = rviComparePattern( pattern, serviceName ) ) == RVI_OK )
                 goto exit; /* We found a match, exit immediately */
@@ -1591,7 +1597,10 @@ int rviReadAu( TRviHandle handle, json_t *msg, TRviRemote *remote )
         goto exit;
     }
 
-    json_array_foreach( tmp, index, value ) {
+//    json_array_foreach( tmp, index, value ) {
+    for( index = 0; 
+         index < json_array_size( tmp ) && ( value = json_array_get( tmp, index ) ); 
+         index ++) {
         const char *val = json_string_value( value );
         if(  rviValidateCredential( handle, val, cert ) != RVI_OK ) {
             continue;
@@ -1666,7 +1675,10 @@ int rviReadSa( TRviHandle handle, json_t *msg, TRviRemote *remote )
         av = 1;
     }
 
-    json_array_foreach( tmp, index, value ) {
+    //json_array_foreach( tmp, index, value ) {
+    for( index = 0; 
+         index < json_array_size( tmp ) && ( value = json_array_get( tmp, index ) ); 
+         index ++) {
         const char *val = json_string_value( value );
         if( av ) { /* Service newly available */
             /* If remote doesn't have right to receive, discard */
