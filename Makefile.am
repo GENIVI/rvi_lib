@@ -4,6 +4,8 @@ SUBDIRS = include src examples
 
 dist_doc_DATA = README.md
 
+examplesdir = examples
+
 check-valgrind: all
 	$(MAKE) $(AM_MAKEFLAGS) -C examples check-valgrind
 
