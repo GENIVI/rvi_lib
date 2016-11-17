@@ -11,7 +11,6 @@ AC_SUBST([AM_CFLAGS], [-Wall])
 PKG_CHECK_MODULES([OPENSSL], [openssl >= 0.9.8])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.0])
 PKG_CHECK_MODULES([CHECK], [check >= 0.9.4], [true], [true])
-PKG_CHECK_MODULES([JWT], [libjwt >= 1.7.1])
 
 AX_VALGRIND_CHECK
 
@@ -26,5 +25,8 @@ AC_CONFIG_FILES([
  examples/Makefile
  src/librvi.pc
 ])
+
+# Call libjwt's ./configure script recursively
+AC_CONFIG_SUBDIRS([libjwt])
 
 AC_OUTPUT

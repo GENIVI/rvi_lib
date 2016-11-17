@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = include src examples
+SUBDIRS = libjwt include src examples
 
 dist_doc_DATA = README.md
 
