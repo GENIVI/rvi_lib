@@ -745,7 +745,7 @@ WARN_LOGFILE           =
 
 INPUT                  =            \ 
                           README.md \
-                          src/rvi.h \
+                          include/rvi.h \
 USE_MDFILE_AS_MAINPAGE = README.md
 
 # This tag can be used to specify the character encoding of the source files

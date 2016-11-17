@@ -37,3 +37,4 @@ examples/priv/*
 # Build artifacts
 build/*
 tmp/*
+*.tar.gz

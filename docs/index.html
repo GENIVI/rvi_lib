@@ -99,9 +99,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <li><a href="https://www.openssl.org/">OpenSSL</a></li>
 <li><a href="http://www.digip.org/jansson/">Jansson</a></li>
 <li><a href="https://github.com/benmcollins/libjwt">LibJWT</a> †</li>
-<li><a href="https://cmake.org/">cmake</a></li>
+<li><a href="https://www.gnu.org/software/autoconf/autoconf.html">GNU Autotools</a></li>
 </ol>
-<p>† Please note that this project contains modified code for libjwt to support public-private key cryptography for JSON Web Tokens. As such, no further downloads are required for libJWT at the present time. However, this is subject to change when the upstream project supports tokens encoded using RS256.</p>
+<p>† Included as a submodule.</p>
 <p><code>rvi_lib</code> does not currently depend on the following but may add any or all to support interoperability with <a href="https://github.com/GENIVI/rvi_core">RVI Core</a> nodes:</p>
 <ol type="1">
 <li><a href="http://ludocode.github.io/mpack/">mpack</a></li>
@@ -113,18 +113,19 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <ul>
 <li>git</li>
 <li>make</li>
-<li>cmake</li>
+<li>GNU Autotools</li>
 <li>gcc (or another c compiler)</li>
 </ul>
-<p>These can also be installed via <code>apt</code> on Ubuntu: </p><pre class="fragment">$ sudo apt-get install git make cmake gcc
+<p>These can also be installed via <code>apt</code> on Ubuntu: </p><pre class="fragment">$ sudo apt-get install git make GNU Autotools gcc
 </pre><h4>Clone repo recursively</h4>
 <p>Clone or download this repo: </p><pre class="fragment">$ git clone --recursive https://github.com/GENIVI/rvi_lib.git
 </pre><h4>Build</h4>
-<p>Build the library using make. After cloning: </p><pre class="fragment">$ cd rvi_lib
-$ make
+<p>Build the library using autotools. After cloning: </p><pre class="fragment">$ cd rvi_lib
+$ autoreconf -i &amp;&amp; ./configure &amp;&amp; make
 </pre><h4>Install</h4>
 <p>To install the library and headers for use in applications or development, run the following: </p><pre class="fragment">$ make install
-</pre><p>This will install both <code>libjwt</code> and <code>librvi</code> on your development platform.</p>
+</pre><p>This will install both <code>libjwt</code> and <code>librvi</code> on your development platform. By default, both are installed to <code>/usr/local</code>; use <code>prefix</code> to specify an alternate location, as in: </p><pre class="fragment">$ make install prefix=/usr 
+</pre><p>Some operating systems will require <code>sudo</code> for either operation.</p>
 <h4>Quick Start</h4>
 <p>If you would like to see an example of an application using <code>rvi_lib</code>, run the following: </p><pre class="fragment">$ make examples
 $ cd examples
@@ -206,7 +207,7 @@ and CSR" and "Sign the CSR" steps above for the server. See <a href="https://git
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Nov 15 2016 09:14:25 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Nov 17 2016 12:05:50 for Remote Vehicle Interface C API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

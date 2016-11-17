@@ -42,12 +42,9 @@ capabilities including server behaviors.
 2. [OpenSSL](https://www.openssl.org/)
 3. [Jansson](http://www.digip.org/jansson/)
 4. [LibJWT](https://github.com/benmcollins/libjwt) †
-5. [cmake](https://cmake.org/)
+5. [GNU Autotools](https://www.gnu.org/software/autoconf/autoconf.html)
 
-† Please note that this project contains modified code for libjwt to support
-public-private key cryptography for JSON Web Tokens. As such, no further
-downloads are required for libJWT at the present time. However, this is subject
-to change when the upstream project supports tokens encoded using RS256.
+† Included as a submodule.
 
 `rvi_lib` does not currently depend on the following but may add any or all to
 support interoperability with [RVI Core](https://github.com/GENIVI/rvi_core)
@@ -66,12 +63,12 @@ Ensure the following packages are also installed:
 
 * git
 * make
-* cmake
+* GNU Autotools
 * gcc (or another c compiler)
 
 These can also be installed via `apt` on Ubuntu:
 
-    $ sudo apt-get install git make cmake gcc
+    $ sudo apt-get install git make GNU Autotools gcc
 
 #### Clone repo recursively
 Clone or download this repo:
@@ -80,10 +77,10 @@ Clone or download this repo:
 
 #### Build
 
-Build the library using make. After cloning:
+Build the library using autotools. After cloning:
 
     $ cd rvi_lib
-    $ make
+    $ autoreconf -i && ./configure && make
 
 #### Install
 To install the library and headers for use in applications or development, run
@@ -91,7 +88,13 @@ the following:
 
     $ make install
 
-This will install both `libjwt` and `librvi` on your development platform.
+This will install both `libjwt` and `librvi` on your development platform. By
+default, both are installed to `/usr/local`; use `prefix` to specify an
+alternate location, as in:
+
+    $ make install prefix=/usr 
+
+Some operating systems will require `sudo` for either operation.
 
 #### Quick Start
 If you would like to see an example of an application using `rvi_lib`, run the
