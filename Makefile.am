@@ -11,3 +11,6 @@ check-valgrind: all
 
 check-code-coverage: all
 	$(MAKE) $(AM_MAKEFLAGS) -C examples check-code-coverage
+
+docs:
+	doxygen
