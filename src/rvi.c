@@ -1795,6 +1795,7 @@ int rviServiceAnnounce( TRviHandle handle, TRviService *service, int available )
         while( !btree_iter_at_end( iter  ) ) {
             TRviRemote *remote = btree_iter_data( iter );
             if( ( err = rviRightToInvokeError( remote->rights, service->name ) ) ) {
+                btree_iter_next( iter );
                 continue; /* If the remote can't invoke, don't announce */
             }
             BIO_puts( remote->sbio, saString );
