@@ -1850,5 +1850,6 @@ int rviReadRcv( TRviHandle handle, json_t *msg, TRviRemote *remote )
 
 exit:
     if( skey.name ) free( skey.name );
+    if( parameters ) free( parameters );
     return err;
 }
