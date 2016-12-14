@@ -1097,6 +1097,7 @@ int rviCleanup(TRviHandle handle)
     rviRightsListDestroy( ctx->rights );
 
     /* Free the memory allocated to the TRviContext struct */
+    memset( ctx, 0, sizeof( TRviContext ) );
     free(ctx);
 
     return RVI_OK;
@@ -1619,7 +1620,7 @@ int rviWriteAu( TRviHandle handle, TRviRemote *remote )
     if( !handle || !remote ) { return EINVAL; }
 
     int             err     = RVI_OK;
-    TRviContext   *ctx    = ( TRviContext * )handle;
+    TRviContext     *ctx    = ( TRviContext * )handle;
     json_t          *creds  = NULL;
     json_t          *au     = NULL;
 
