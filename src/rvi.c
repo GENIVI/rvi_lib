@@ -101,7 +101,7 @@ typedef struct TRviRights {
 
 TRviService *rviServiceCreate ( const char *name, const int registrant, 
                                     const TRviCallback callback, 
-                                    const void *serviceData, size_t dataSize );
+                                    const void *serviceData );
 
 void rviServiceDestroy ( TRviService *service );
 
@@ -251,7 +251,7 @@ int rviComparePattern ( const char *pattern, const char *fqsn )
 
 TRviService *rviServiceCreate ( const char *name, const int registrant, 
                                     const TRviCallback callback, 
-                                    const void *serviceData, size_t dataSize )
+                                    const void *serviceData )
 {
     /* If name is NULL or registrant is negative, there's an error */
     if ( !name || (registrant < 0) ) { return NULL; }
@@ -270,16 +270,8 @@ TRviService *rviServiceCreate ( const char *name, const int registrant,
     /* Set the callback. NULL is valid. */
     service->callback = callback;
 
-    /* Set the data to pass to the callback. NULL is valid */
-    if( dataSize ) {
-        service->data = malloc( dataSize );
-        if(! service->data ) {
-            free( service->name );
-            free( service );
-            return NULL;
-        }
-        memcpy( service->data, serviceData, dataSize );
-    }
+    /* Set the serviceData. NULL is valid. */
+    service->data = serviceData;
 
     /* Return the address of the new service */
     return service;
@@ -294,8 +286,6 @@ void rviServiceDestroy ( TRviService *service )
 {
      if ( !service ) { return; }
 
-     if( service->data )
-         free ( service->data );
      free ( service->name );
      free ( service );
 }
@@ -1288,7 +1278,7 @@ int rviGetConnections(TRviHandle handle, int *conn, int *connSize)
  */
 int rviRegisterService( TRviHandle handle, const char *serviceName, 
                           TRviCallback callback, 
-                          void *serviceData, size_t dataSize )
+                          void *serviceData )
 {
     if( !handle || !serviceName ) { return EINVAL; }
 
@@ -1305,7 +1295,7 @@ int rviRegisterService( TRviHandle handle, const char *serviceName,
     }
 
     /* Create a new TRviService structure */
-    service = rviServiceCreate( fqsn, 0, callback, serviceData, dataSize );
+    service = rviServiceCreate( fqsn, 0, callback, serviceData );
 
     /* Add service to services by name */
     btree_insert( ctx->serviceNameIdx, service );
@@ -1692,8 +1682,8 @@ int rviReadSa( TRviHandle handle, json_t *msg, TRviRemote *remote )
             /* Otherwise, add the service to services available */
             TRviService *service = rviServiceCreate( 
                                                  val, remote->fd, 
-                                                 NULL, NULL, 0
-                                                       );
+                                                 NULL, NULL 
+                                                    );
             btree_insert( ctx->serviceNameIdx, service );
             btree_insert( ctx->serviceRegIdx, service );
         } else { /* Service not available, find it and remove it */

@@ -217,14 +217,13 @@ extern int rviGetConnections(TRviHandle handle, int *conn, int *connSize);
  *                        invocation.
  * @param serviceData  - Parameters to be passed to the callback function (in
  *                        addition to any JSON parameters from the remote node)
- * @param dataSize     - Size of serviceData
  *
  * @return 0 on success,
  *         error code otherwise.
  */
 extern int rviRegisterService( TRviHandle handle, const char *serviceName, 
                                  TRviCallback callback, 
-                                 void* serviceData, size_t dataSize );
+                                 void* serviceData );
 
 /** @brief Unregister a previously registered service
  *
