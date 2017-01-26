@@ -17,6 +17,28 @@ cdef extern from "stdlib.h":
     void *malloc(size_t size)
     void free(void *ptr)
 
+cdef void rvi_callback( int fd, void *serviceData, const char *parameters ):
+    "Callback function that can be passed as TRviCallback"
+    try:
+        # recover Python function object from void* argument
+        func = <object>serviceData
+        # call function
+        func(parameters)
+    except:
+        # catch any Python errors and return error indicator
+        raise RuntimeError("an error occurred")
+
+cdef class RVIService:
+    cdef object _fqsn
+    cdef object _callback
+    def __cinit__(self, fqsn, callback):
+        self._fqsn = fqsn
+        if self._fqsn is None:
+            raise MemoryError()
+        self._callback = callback
+        if self._callback is None:
+            raise MemoryError()
+
 cdef class RVI:
     cdef rvi_types.TRviHandle _thisptr
 
@@ -96,11 +118,9 @@ cdef class RVI:
 
         return result
 
-#    def register_service(self, const char *serviceName, 
-#                         TRviCallback callback, serviceData
-#                        ):
-#        rviRegisterService(self._thisptr, serviceName, callback, 
-#                                serviceData, dataSize)
+    def register_service(self, RVIService service):
+        rvi_types.rviRegisterService(self._thisptr, service._fqsn, 
+                            rvi_callback, <void *> service._callback );
     
     def unregister_service(self, const char *serviceName):
         return rvi_types.rviUnregisterService(self._thisptr, serviceName)
@@ -129,8 +149,15 @@ cdef class RVI:
 
         return result
 
-    def invoke_service(self, const char *serviceName, const char *parameters = NULL ):
-        print("Invoke: " + serviceName )
+    def invoke_service(self, const char *serviceName, 
+                        const char *parameters = NULL 
+                       ):
+        """Expects a properly-stringified form of a JSON object, e.g.:
+        >>> obj = {'hello':'world'}
+        >>> params = json.dumps(obj)
+        >>> rvi.invoke_service("ExampleServiceName", params)
+        """
         if( parameters != NULL):
             print(parameters)
-        return rvi_types.rviInvokeService(self._thisptr, serviceName, parameters)
+        return rvi_types.rviInvokeService(self._thisptr, 
+                                          serviceName, parameters)

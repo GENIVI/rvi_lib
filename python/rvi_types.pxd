@@ -48,7 +48,7 @@ cdef extern from "rvi.h":
     # @brief Register a service with a callback function
     int rviRegisterService( TRviHandle handle, const char *serviceName, 
                                      TRviCallback callback, 
-                                     void* serviceData, size_t dataSize )
+                                     void* serviceData )
 
     # @brief Unregister a previously registered service
     int rviUnregisterService( TRviHandle handle, const char *serviceName )
