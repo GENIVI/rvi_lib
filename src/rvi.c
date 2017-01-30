@@ -845,6 +845,7 @@ int rviValidateCredential( TRviHandle handle, const char *cred, X509 *cert )
     X509            *dcert = {0};
     const char      certHead[] = "-----BEGIN CERTIFICATE-----\n";
     const char      certFoot[] = "\n-----END CERTIFICATE-----";
+    char            *tmp = NULL;
 
     ret = RVI_OK;
 
@@ -874,7 +875,7 @@ int rviValidateCredential( TRviHandle handle, const char *cred, X509 *cert )
     if( ( start > rawtime ) || ( stop < rawtime ) ) { ret = -1; goto exit; }
 
     const char *deviceCert = jwt_get_grant( jwt, "device_cert" );
-    char *tmp = malloc( strlen( deviceCert ) + strlen( certHead ) 
+    tmp = malloc( strlen( deviceCert ) + strlen( certHead ) 
                         + strlen ( certFoot ) + 1 );
     if( !tmp ) { ret = ENOMEM; goto exit; }
     sprintf(tmp, "%s%s%s", certHead, deviceCert, certFoot);
