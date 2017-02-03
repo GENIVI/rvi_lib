@@ -54,6 +54,8 @@ nodes:
 
 # Build Instructions
 
+## Native Build
+
 #### Install prerequisites
 Install openssl and Jansson. On Ubuntu:
     
@@ -95,6 +97,10 @@ alternate location, as in:
     $ make install prefix=/usr 
 
 Some operating systems will require `sudo` for either operation.
+
+## Cross-Platform Build
+
+Cross-platform building is supported with the Yocto Project. The [meta-rvi](https://www.github.com/GENIVI/meta-rvi) layer provides recipes for `librvi` and `libjwt`.
 
 #### Quick Start
 If you would like to see an example of an application using `rvi_lib`, run the
