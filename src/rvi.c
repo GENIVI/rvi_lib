@@ -1553,11 +1553,9 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
 
         json_decref( root );
     }
-        
-    free( buf );
-
 
 exit:
+    if( buf ) free( buf );
     return err;
 }
 
