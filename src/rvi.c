@@ -1441,7 +1441,7 @@ int rviInvokeService(TRviHandle handle, const char *serviceName,
     if ( !params ) { ret = RVI_ERR_JSON; goto exit; }
 
     rcv = json_pack( 
-            "{s:s, s:i, s:s, s:{s:s, s:i, s:o}}",
+            "{s:s, s:i, s:s, s:{s:s, s:I, s:o}}",
             "cmd", "rcv",
             "tid", 1, /* TODO: talk to Ulf about tid */
             "mod", "proto_json_rpc",
