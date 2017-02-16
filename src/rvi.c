@@ -771,7 +771,7 @@ char *rviGetPubkeyFile( char *filename )
     BIO         *certbio    = NULL;
     BIO         *mbio       = NULL;
     X509        *cert       = NULL;
-    char        *key;
+    char        *key = 0;
     long        length;
     int         ret = RVI_OK;
     int         ok = 0; /* Status for OpenSSL calls */
@@ -845,6 +845,7 @@ int rviValidateCredential( TRviHandle handle, const char *cred, X509 *cert )
     X509            *dcert = {0};
     const char      certHead[] = "-----BEGIN CERTIFICATE-----\n";
     const char      certFoot[] = "\n-----END CERTIFICATE-----";
+    json_t          *validity = NULL;
     char            *tmp = NULL;
 
     ret = RVI_OK;
@@ -867,7 +868,7 @@ int rviValidateCredential( TRviHandle handle, const char *cred, X509 *cert )
 
     /* Check validity: start/stop */
     time(&rawtime);
-    json_t *validity = rviGetJsonGrant( jwt, "validity" );
+    validity = rviGetJsonGrant( jwt, "validity" );
 
     int start = json_integer_value( json_object_get( validity, "start" ) );
     int stop = json_integer_value( json_object_get( validity, "stop" ) );
