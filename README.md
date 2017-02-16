@@ -24,7 +24,7 @@ information that crosses trust boundaries.
 capabilities including server behaviors.
 
 # Documentation
-[GitHub pages](http://genivi.github.io/rvi_lib)
+[GitHub pages](http://genivi.github.io/rvi_lib/files.html)
 
 # Standards Used
 
@@ -70,7 +70,7 @@ Ensure the following packages are also installed:
 
 These can also be installed via `apt` on Ubuntu:
 
-    $ sudo apt-get install git make GNU Autotools gcc
+    $ sudo apt-get install git make autoconf gcc
 
 #### Clone repo recursively
 Clone or download this repo:
@@ -115,7 +115,7 @@ certificates and one or more JWT credentials. See the "Configuration" section
 for details on configuring your own, or use the "conf.json" file for the
 pre-supplied (*insecure*) configuration.
 
-Connect to a remote test RVI node at 38.129.64.41, port 9010. You can register
+Connect to a remote test RVI node at 38.129.64.41, port 9007. You can register
 services, invoke remote services, and process incoming messages.
 
 Insecure configuration details, including private keys and certificates, are
@@ -294,8 +294,9 @@ lifetime.
 # Contributions
 `rvi_lib` is an open source project maintained by
 [GENIVI](https://www.genivi.org/) for general use. Contributions are welcome,
-subject to licensing compatibility with MPL v2.0. Submit issues or pull
-requests via GitHub at the authoritative
+subject to licensing compatibility with MPL v2.0. Submit issues at the the
+[GENIVI Project JIRA](https://at.projects.genivi.org/jira/projects/RCC).
+Submit pull requests via GitHub at the authoritative
 [GENIVI/rvi_lib](https://github.com/GENIVI/rvi_lib/) repo.
 
 # Limitations
