@@ -942,7 +942,7 @@ TRviHandle rviInit ( char *configFilename )
     }
 
     if ( !(ctx->creds->count) ) {
-        fprintf(stderr, "Error: no rights available\n");
+        fprintf(stderr, "Error: no credentials available\n");
         goto err;
     }
 
@@ -1488,7 +1488,7 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
     json_t          *root   = NULL;
     json_error_t    jserr   = {0};
 
-    int             len     = 1024 * 8;
+    int             len     = 0;
     int             read    = 0;
     char            *buf    = {0};
     long            mode    = 0;
@@ -1516,13 +1516,16 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
         /* Ensure our mode is blocking */
         SSL_set_mode( ssl, SSL_MODE_AUTO_RETRY );
 
+        /* Find out how long the message is */
+        len = BIO_ctrl_pending(rtmp->sbio);
+        /* Allocate a buffer for the new message */
         buf = malloc( len + 1 );
         if( !buf ) { err = ENOMEM; goto exit; }
 
         memset( buf, 0, len );
 
         read = BIO_read( rtmp->sbio, buf, len );
-        if( read  <= 0 )  { err = EIO; goto exit; } 
+        if( read  != len )  { err = EIO; goto exit; } 
 
         root = json_loads( buf, 0, &jserr ); /* RVI commands are JSON structs */
         if( !root ) { err = RVI_ERR_JSON; goto exit; }
