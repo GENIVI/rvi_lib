@@ -1,4 +1,4 @@
-# REMOTE VEHICLE INTERFACE {#mainpage}
+# REMOTE VEHICLE INTERACTION {#mainpage}
 
 [![Build Status](https://travis-ci.org/tjamison/rvi_lib.svg?branch=master)](https://travis-ci.org/tjamison/rvi_lib)
 
@@ -11,7 +11,7 @@ All code in this repository is licensed under Mozilla Public License
 v2 (MPLv2). Click [here](https://www.mozilla.org/en-US/MPL/2.0/) for
 details.
 
-Remote Vehicle Interface (RVI) provides an architecture which, through its
+Remote Vehicle Interaction (RVI) provides an architecture which, through its
 specified components, enables connected vehicles and other devices to form a
 secured distributed, sparsely connected peer-to-peer network. In particular,
 local services can be registered to enable remote invocation only when the peer

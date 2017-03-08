@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['remote_20vehicle_20interface',['REMOTE VEHICLE INTERFACE',['../index.html',1,'']]],
+  ['remote_20vehicle_20interaction',['REMOTE VEHICLE INTERACTION',['../index.html',1,'']]],
   ['rvi_2eh',['rvi.h',['../rvi_8h.html',1,'']]],
   ['rvi_5ferr_5fclientcert',['RVI_ERR_CLIENTCERT',['../rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddbafd47a7d0e4041c819c0974f873b9c80c',1,'rvi.h']]],
   ['rvi_5ferr_5fjson',['RVI_ERR_JSON',['../rvi_8h.html#aeed1da6c6f4f94d99f37d7ac1ac71ddba568f843abd268eaaebe2e980abd9714f',1,'rvi.h']]],
