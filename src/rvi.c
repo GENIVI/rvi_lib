@@ -27,6 +27,13 @@
 #include <stdio.h>
 #include <time.h>
 
+#define TLS_MAX_READ 16384 /* Default maximum write buffer for OpenSSL */
+#define TLS_BUFSIZE  16768 /* Round it up to the nearest power of 2 */
+#define TLS_MAX_WINDOWS 100 /* Default number of windows expected for large TLS
+                             * messages : OpenSSL reassembles messages but
+                             * SSL_read may require repeated reads to get all
+                             * of the data */
+
 /* *************** */
 /* DATA STRUCTURES */
 /* *************** */
@@ -506,6 +513,9 @@ SSL_CTX *rviSetupClientCtx ( TRviHandle handle )
      * root CA. 
      */
     SSL_CTX_set_verify_depth ( sslCtx, 4 );
+
+    /* Ensure that SSL does not read ahead */
+    SSL_CTX_set_read_ahead( sslCtx, 0);
 
     return sslCtx;
 }
@@ -1490,10 +1500,18 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
 
     int             len     = 0;
     int             read    = 0;
-    char            *buf    = {0};
+    char            **buf   = {0};
+    char            *msg    = {0};
     long            mode    = 0;
-    int             i       = 0;
+    int             i,j     = 0;
     int             err     = 0;
+
+    buf = malloc( TLS_MAX_WINDOWS * sizeof(char *) );
+    if(!buf) { err = ENOMEM; goto exit; }
+
+    for(j = 0; j < TLS_MAX_WINDOWS; j++) {
+        buf[j] = NULL;
+    } 
 
     /* For each file descriptor we've received */
     while( i < fdLen ) {
@@ -1516,18 +1534,31 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
         /* Ensure our mode is blocking */
         SSL_set_mode( ssl, SSL_MODE_AUTO_RETRY );
 
-        /* Find out how long the message is */
-        len = BIO_ctrl_pending(rtmp->sbio);
-        /* Allocate a buffer for the new message */
-        buf = malloc( len + 1 );
-        if( !buf ) { err = ENOMEM; goto exit; }
+        j = 0;
+        do {
+            buf[j] = malloc(TLS_BUFSIZE);
+            if(!buf[j]) { err = ENOMEM; goto exit; }
+            memset(buf[j], 0, TLS_BUFSIZE);
 
-        memset( buf, 0, len );
+            read = SSL_read(ssl,  buf[j], TLS_BUFSIZE);
+            if( read  <= 0 )  { err = EIO; goto exit; } 
+            j++;
+        } while (read == TLS_MAX_READ);
+        
+        len = ((j - 1) * TLS_MAX_READ) + read; /* Calculate total message length */
 
-        read = BIO_read( rtmp->sbio, buf, len );
-        if( read  != len )  { err = EIO; goto exit; } 
+        msg = malloc(len + 1);
+        if(!msg) { err = ENOMEM; goto exit; }
+        memset(msg, 0, len);
+        int ofs = 0;
+        for(int k = 0; k < j - 1; k++) {
+            memcpy(msg + ofs, buf[k], TLS_MAX_READ);
+            ofs += TLS_MAX_READ;
+        }
+        memcpy(msg + ofs, buf[j - 1], read);
+        msg[len] = '\0';
 
-        root = json_loads( buf, 0, &jserr ); /* RVI commands are JSON structs */
+        root = json_loads( msg, 0, &jserr ); /* RVI commands are JSON structs */
         if( !root ) { err = RVI_ERR_JSON; goto exit; }
 
         /* Get RVI cmd from string */
@@ -1543,7 +1574,7 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
             rviReadRcv( handle, root, rtmp );
         } else if( strcmp( cmd, "ping" ) == 0 ) {
             /* Echo the ping back */
-            BIO_puts( rtmp->sbio, buf );
+            SSL_write( ssl, msg, read );
         } else { /* UNKNOWN RVI COMMAND */
             err = -RVI_ERR_NOCMD; 
             goto exit;
@@ -1553,13 +1584,15 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
         SSL_set_mode( ssl, mode );
 
         /* We no longer need the string we received */
-        memset( buf, 0, len );
+        memset( msg, 0, len );
 
         json_decref( root );
     }
 
 exit:
-    if( buf ) free( buf );
+    for(j; j > 0; j--) { free(buf[j]); }
+    free(buf);
+    free(msg);
     return err;
 }
 
