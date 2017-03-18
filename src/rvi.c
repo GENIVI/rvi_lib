@@ -79,6 +79,8 @@ typedef struct TRviRemote {
     TRviList *rights;
     /** Pointer to data buffer for partial I/O operations */
     void *buf;
+    /** Length of buffer */
+    int buflen;
     /** Pointer to BIO chain from OpenSSL library */
     BIO *sbio;
 } TRviRemote;
@@ -145,6 +147,8 @@ SSL_CTX *rviSetupClientCtx ( TRviHandle handle );
 /* Additional utility functions */
 
 int rviReadJsonConfig ( TRviHandle handle, const char * filename );
+
+int rviReadJsonChunk( json_t **json, char *src, char **remainder);
 
 json_t *rviGetJsonGrant ( jwt_t *jwt, const char *grant );
 
@@ -342,7 +346,7 @@ void rviRemoteDestroy ( TRviRemote *remote)
 
     BIO_free_all ( remote->sbio );
 
-    free ( remote->buf );
+    if ( remote->buflen ) free ( remote->buf );
     free ( remote );
 }
 
@@ -634,6 +638,41 @@ exit:
     if( d ) closedir( d );
 
     return err;
+}
+
+/* This utility function destructively reads from 'src' to populate '*json'
+ * with a parsed json_t object. The remaining string (possibly 'src' exactly)
+ * is copied into '*remainder'. The original 'src' must not be accessed again
+ * by the calling function. */
+int rviReadJsonChunk( json_t **json, char *src, char **remainder )
+{
+    json_error_t error;
+    int ret = 0;
+    int len;
+
+    *json = json_loads(src, JSON_DISABLE_EOF_CHECK, &error);
+
+    char *tmp = {0};
+
+    if (*json) {
+        tmp = &src[error.position];
+    } else {
+        tmp = src;
+        ret = -1;
+    }
+
+    len = strlen(tmp);
+    *remainder = malloc(len + 1);
+    if (!(*remainder)) { ret = ENOMEM; goto exit; }
+    memset(*remainder, 0, len + 1);
+    memcpy(*remainder, tmp, len);
+    ret = len;
+
+    /* Free src only if we read it into *remainder */
+    free(src);
+
+exit:
+    return ret;
 }
 
 json_t *rviGetJsonGrant ( jwt_t *jwt, const char *grant )
@@ -1496,22 +1535,15 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
 
     SSL             *ssl    = NULL;
     json_t          *root   = NULL;
-    json_error_t    jserr   = {0};
 
     int             len     = 0;
     int             read    = 0;
-    char            **buf   = {0};
+    char            *buf   = {0};
     char            *msg    = {0};
     long            mode    = 0;
-    int             i,j     = 0;
+    int             i       = 0;
     int             err     = 0;
 
-    buf = malloc( TLS_MAX_WINDOWS * sizeof(char *) );
-    if(!buf) { err = ENOMEM; goto exit; }
-
-    for(j = 0; j < TLS_MAX_WINDOWS; j++) {
-        buf[j] = NULL;
-    } 
 
     /* For each file descriptor we've received */
     while( i < fdLen ) {
@@ -1534,32 +1566,41 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
         /* Ensure our mode is blocking */
         SSL_set_mode( ssl, SSL_MODE_AUTO_RETRY );
 
-        j = 0;
-        do {
-            buf[j] = malloc(TLS_BUFSIZE);
-            if(!buf[j]) { err = ENOMEM; goto exit; }
-            memset(buf[j], 0, TLS_BUFSIZE);
-
-            read = SSL_read(ssl,  buf[j], TLS_BUFSIZE);
-            if( read  <= 0 )  { err = EIO; goto exit; } 
-            j++;
-        } while (read == TLS_MAX_READ);
-        
-        len = ((j - 1) * TLS_MAX_READ) + read; /* Calculate total message length */
-
-        msg = malloc(len + 1);
-        if(!msg) { err = ENOMEM; goto exit; }
-        memset(msg, 0, len);
-        int ofs = 0;
-        for(int k = 0; k < j - 1; k++) {
-            memcpy(msg + ofs, buf[k], TLS_MAX_READ);
-            ofs += TLS_MAX_READ;
+        len = rtmp->buflen;
+        buf = malloc(TLS_BUFSIZE + len);
+        if(!buf) { err = ENOMEM; goto exit; }
+        memset(buf, 0, TLS_BUFSIZE + len);
+        if(len) {
+            memcpy(buf, rtmp->buf, len);
+            memset(rtmp->buf, 0, len);
+            free(rtmp->buf);
+            rtmp->buflen = 0; 
         }
-        memcpy(msg + ofs, buf[j - 1], read);
-        msg[len] = '\0';
 
-        root = json_loads( msg, 0, &jserr ); /* RVI commands are JSON structs */
-        if( !root ) { err = RVI_ERR_JSON; goto exit; }
+        read = SSL_read(ssl, &buf[len], TLS_BUFSIZE);
+        if( read  <= 0 )  { err = EIO; goto exit; } 
+        
+        err = rviReadJsonChunk(&root, buf, &msg); // rviReadJsonChunk returns
+                                                  // non-zero if there's data
+                                                  // remaining: not strictly an
+                                                  // error condition
+
+        if (err) {
+            rtmp->buflen = strlen(msg);
+            if( rtmp-> buflen ) {
+                rtmp->buf = malloc(rtmp->buflen + 1); 
+                if (!rtmp->buf) { err = ENOMEM; goto exit; }
+                memset(rtmp->buf, 0, rtmp->buflen + 1);
+                memcpy(rtmp->buf, msg, rtmp->buflen);
+                free(msg);
+            } else {
+                rtmp->buf = NULL;
+            }
+        }
+
+        if (!root) { err = RVI_ERR_JSON; goto exit; }
+
+        err = 0; // if we got valid JSON, it's not an error condition
 
         /* Get RVI cmd from string */
         strncpy( cmd, json_string_value( json_object_get( root, "cmd" ) ), 5 );
@@ -1583,16 +1624,10 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
         /* Set the mode back to its original bitmask */
         SSL_set_mode( ssl, mode );
 
-        /* We no longer need the string we received */
-        memset( msg, 0, len );
-
         json_decref( root );
     }
 
 exit:
-    for(j; j > 0; j--) { free(buf[j]); }
-    free(buf);
-    free(msg);
     return err;
 }
 
