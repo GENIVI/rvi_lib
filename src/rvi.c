@@ -38,6 +38,9 @@
 /* DATA STRUCTURES */
 /* *************** */
 
+/** @brief verbose variable */
+bool verbose = false;
+
 /** @brief RVI context */
 typedef struct TRviContext {
 
@@ -849,6 +852,9 @@ char *rviGetPubkeyFile( char *filename )
     if( !key ) { ret = ENOMEM; goto exit; }
     /* Load the string into memory */
     ret = BIO_read(mbio, key, length);
+    if(verbose){
+        fprintf(stderr, "rviGetPubkeyFile, received %d bytes, : '%s'\n", ret, key);
+    }
     if( ret != length) { goto exit; }
     /* Make sure it's null-formatted, just in case */
     key[length] = '\0';
@@ -932,6 +938,10 @@ int rviValidateCredential( TRviHandle handle, const char *cred, X509 *cert )
 
     /* Check that certificate in credential matches expected cert */
     bio = BIO_new( BIO_s_mem() );
+
+    if(verbose){
+        fprintf(stderr, "rviValidateCredential, sending: '%s'\n", tmp);
+    }
     BIO_puts( bio, (const char *)tmp );
     dcert = PEM_read_bio_X509( bio, NULL, 0, NULL );
     if( !dcert ) { ret = RVI_ERR_OPENSSL; goto exit; }
@@ -947,6 +957,17 @@ exit:
 
     return ret;
 }
+
+
+/*
+ * Enables or disables the verbose loging, by default it is disabled.
+ */
+
+void rviSetVerboseLogs (bool verboseEnable )
+{
+    verbose = verboseEnable;
+}
+
 
 /*
  * Initialize the RVI library. Call before using any other functions.
@@ -1507,6 +1528,9 @@ int rviInvokeService(TRviHandle handle, const char *serviceName,
     char *rcvString = json_dumps(rcv, JSON_COMPACT);
 
     /* send rcv message to registrant */
+    if(verbose){
+        fprintf(stderr, "rviInvokeService, sending: '%s'\n", rcvString);
+    }
     BIO_puts(rtmp->sbio, rcvString);
 
     free(rcvString);
@@ -1579,6 +1603,9 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
 
         read = SSL_read(ssl, &buf[len], TLS_BUFSIZE);
         if( read  <= 0 )  { err = EIO; goto exit; } 
+        if(verbose){
+            fprintf(stderr, "rviProcessInput, received %d bytes, : '%s'\n", read, buf);
+        }
         
         err = rviReadJsonChunk(&root, buf, &msg); // rviReadJsonChunk returns
                                                   // non-zero if there's data
@@ -1615,6 +1642,9 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
             rviReadRcv( handle, root, rtmp );
         } else if( strcmp( cmd, "ping" ) == 0 ) {
             /* Echo the ping back */
+            if(verbose){
+                fprintf(stderr, "rviProcessInput[ping], sending: '%s'\n", buf);
+            }
             SSL_write( ssl, msg, read );
         } else { /* UNKNOWN RVI COMMAND */
             err = -RVI_ERR_NOCMD; 
@@ -1706,6 +1736,9 @@ int rviWriteAu( TRviHandle handle, TRviRemote *remote )
     char *auString = json_dumps(au, JSON_COMPACT);
 
     /* send "au" message */
+    if(verbose){
+        fprintf(stderr, "rviWriteAu, sending: '%s'\n", auString);
+    }
     BIO_puts( remote->sbio, auString );
 
 exit:
@@ -1810,6 +1843,9 @@ int rviAllServiceAnnounce( TRviHandle handle, TRviRemote *remote )
     /* send "sa" reply */
     char *saString = json_dumps(sa, JSON_COMPACT);
 
+    if(verbose){
+        fprintf(stderr, "rviAllServiceAnnounce, sending: '%s'\n", saString);
+    }
     BIO_puts( remote->sbio, saString );
 
 exit:
@@ -1859,6 +1895,10 @@ int rviServiceAnnounce( TRviHandle handle, TRviService *service, int available )
             if( ( err = rviRightToInvokeError( remote->rights, service->name ) ) ) {
                 btree_iter_next( iter );
                 continue; /* If the remote can't invoke, don't announce */
+            }
+
+            if(verbose){
+                fprintf(stderr, "rviServiceAnnounce, sending: '%s'\n", saString);
             }
             BIO_puts( remote->sbio, saString );
             btree_iter_next( iter );

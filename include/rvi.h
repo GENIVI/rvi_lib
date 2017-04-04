@@ -120,6 +120,17 @@ typedef enum {
 
 extern TRviHandle rviInit(char *configFilename);
 
+/** @brief Enables or disables the verbose loging.
+ *
+ * By default, the verbose logging is disabled, use this function to turn it on.
+ *
+ * @param verboseEnable - if true, verbose will be enabled if false, disabled.
+ *
+ */
+
+extern void rviSetVerboseLogs (bool verboseEnable );
+
+
 /** @brief Tear down the API.
  *
  * Calling applications are expected to call this to cleanly tear down the API.
