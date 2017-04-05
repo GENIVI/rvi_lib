@@ -33,6 +33,9 @@
 /* DATA STRUCTURES */
 /* *************** */
 
+/** @brief verbose variable */
+bool verbose = false;
+
 /** @brief RVI context */
 typedef struct TRviContext {
 
@@ -865,6 +868,9 @@ char *rviGetPubkeyFile( char *filename )
     if( !key ) { ret = ENOMEM; goto exit; }
     /* Load the string into memory */
     ret = BIO_read(mbio, key, length);
+    if(verbose){
+        fprintf(stderr, "rviGetPubkeyFile, received %d bytes, : '%s'\n", ret, key);
+    }
     if( ret != length) { goto exit; }
     /* Make sure it's null-formatted, just in case */
     key[length] = '\0';
@@ -948,6 +954,10 @@ int rviValidateCredential( TRviHandle handle, const char *cred, X509 *cert )
 
     /* Check that certificate in credential matches expected cert */
     bio = BIO_new( BIO_s_mem() );
+
+    if(verbose){
+        fprintf(stderr, "rviValidateCredential, sending: '%s'\n", tmp);
+    }
     BIO_puts( bio, (const char *)tmp );
     dcert = PEM_read_bio_X509( bio, NULL, 0, NULL );
     if( !dcert ) { ret = RVI_ERR_OPENSSL; goto exit; }
@@ -963,6 +973,20 @@ exit:
 
     return ret;
 }
+
+/*
+ * Enables or disables the verbose loging, by default it is disabled.
+ */
+
+void rviSetVerboseLogs (bool verboseEnable )
+{
+    verbose = verboseEnable;
+}
+
+
+/*
+ * Initialize the RVI library. Call before using any other functions.
+ */
 
 
 TRviHandle rviInitInternal (json_t *configContent )
@@ -1597,6 +1621,11 @@ int rviInvokeService(TRviHandle handle, const char *serviceName,
     char *rcvString = json_dumps(rcv, JSON_COMPACT);
 
     /* send rcv message to registrant */
+
+    if(verbose){
+        fprintf(stderr, "rviInvokeService, sending: '%s'\n", rcvString);
+    }
+
     ret = BIO_puts(rtmp->sbio, rcvString);
     if (ret < 0) {
         /* The connection was likely closed by the peer, attempt to resume */
@@ -1683,6 +1712,7 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
         }
 
         read = SSL_read(ssl, &buf[len], TLS_BUFSIZE);
+
         if( read  <= 0 )  {
             err = SSL_get_error(ssl, read);
             if (err != SSL_ERROR_NONE) {
@@ -1692,7 +1722,9 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
             free(buf);
             continue;
         } 
-        
+        if(verbose){
+            fprintf(stderr, "rviProcessInput, received %d bytes, : '%s'\n", read, buf);
+        }
         err = rviReadJsonChunk(&root, buf, rtmp); // rviReadJsonChunk returns
                                                   // non-zero if there's data
                                                   // remaining: not strictly an
@@ -1715,6 +1747,11 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
             rviReadRcv( handle, root, rtmp );
         } else if( strcmp( cmd, "ping" ) == 0 ) {
             /* Echo the ping back */
+
+            if(verbose){
+                fprintf(stderr, "rviProcessInput[ping], sending: '%s'\n", buf);
+            }
+
             len = SSL_write( ssl, "{\"cmd\":\"ping\"}", read );
             if (len != read) {
                 err = SSL_get_error(ssl, read);
@@ -1723,6 +1760,7 @@ int rviProcessInput(TRviHandle handle, int *fdArr, int fdLen)
                     rviResumeConnection(handle, rkey.fd);
                 }
             }
+
         } else { /* UNKNOWN RVI COMMAND */
             err = -RVI_ERR_NOCMD; 
         }
@@ -1821,11 +1859,17 @@ int rviWriteAu( TRviHandle handle, TRviRemote *remote )
     auString = json_dumps(au, JSON_COMPACT);
 
     /* send "au" message */
+
+    if(verbose){
+        fprintf(stderr, "rviWriteAu, sending: '%s'\n", auString);
+    }
+  
     err = BIO_puts( remote->sbio, auString );
     if (err < 0) {
         /* The connection was likely closed by the peer, attempt to resume */
         rviResumeConnection(handle, remote->fd);
     }
+
 
 exit:
     free( auString );
@@ -1929,11 +1973,17 @@ int rviAllServiceAnnounce( TRviHandle handle, TRviRemote *remote )
     /* send "sa" reply */
     saString = json_dumps(sa, JSON_COMPACT);
 
+
+    if(verbose){
+        fprintf(stderr, "rviAllServiceAnnounce, sending: '%s'\n", saString);
+    }
+
     err = BIO_puts( remote->sbio, saString );
     if (err < 0) {
         /* The connection was likely closed by the peer, attempt to resume */
         rviResumeConnection(handle, remote->fd);
     }
+
 
 exit:
     free(saString);
@@ -1983,12 +2033,18 @@ int rviServiceAnnounce( TRviHandle handle, TRviService *service, int available )
                 btree_iter_next( iter );
                 continue; /* If the remote can't invoke, don't announce */
             }
+
+            if(verbose){
+                fprintf(stderr, "rviServiceAnnounce, sending: '%s'\n", saString);
+            }
+
             err = BIO_puts( remote->sbio, saString );
             if (err < 0) {
                 /* The connection was likely closed by the peer, resume and try again */
                 rviResumeConnection(handle, remote->fd);
                 continue;
             }
+
             btree_iter_next( iter );
         }
     btree_iter_cleanup( iter );
