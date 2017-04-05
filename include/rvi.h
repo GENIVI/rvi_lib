@@ -120,6 +120,18 @@ typedef enum {
 
 extern TRviHandle rviInit(char *configFilename);
 
+/** @brief Initialize the RVI library. Call before using any other functions.
+ *
+ * This function do the same as rviInit, but accepts config content, instead of file path.
+ *
+ * @param jsonConfig - config content.
+ *
+ * @return  A handle for the API on success, 
+ *          NULL otherwise.
+ */
+
+extern TRviHandle rviJsonInit(char *jsonConfig);
+
 /** @brief Tear down the API.
  *
  * Calling applications are expected to call this to cleanly tear down the API.
