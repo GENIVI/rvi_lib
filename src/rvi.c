@@ -532,13 +532,12 @@ SSL_CTX *rviSetupClientCtx ( TRviHandle handle )
  * On success, this function returns 0. On error, it will return a positive
  * error code.
  */
-int rviReadJsonConfig ( TRviHandle handle, const char * filename )
+int rviParseJsonConfig ( TRviHandle handle, json_t *conf )
 {
-    if ( !handle || !filename ) { return EINVAL; }
+    if ( !handle || !conf ) { return EINVAL; }
 
     int             err         = RVI_OK;
     json_error_t    errjson;
-    json_t          *conf       = NULL;
     json_t          *tmp        = NULL;
     DIR             *d          = NULL;
     struct dirent   *dir        = {0};
@@ -547,9 +546,6 @@ int rviReadJsonConfig ( TRviHandle handle, const char * filename )
     BIO             *certbio    = NULL;
     X509            *cert       = NULL;
     char            *cred       = NULL;
-
-    conf = json_load_file( filename, 0, &errjson );
-    if( !conf ) { err = RVI_ERR_JSON; goto exit; }
 
     tmp = json_object_get( conf, "dev" );
     if(!tmp) { err = RVI_ERR_JSON; goto exit; }
@@ -560,7 +556,6 @@ int rviReadJsonConfig ( TRviHandle handle, const char * filename )
                 json_object_get( tmp, "cert" ) ) );
     ctx->id = strdup( json_string_value(
                 json_object_get ( tmp, "id" ) ) );
-
 
     tmp = json_object_get ( conf, "ca" );
     if(!tmp) { err = RVI_ERR_JSON; goto exit; }
@@ -582,8 +577,6 @@ int rviReadJsonConfig ( TRviHandle handle, const char * filename )
         if(! ctx->creddir ) { err = ENOMEM; goto exit; }
         sprintf( ctx->creddir, "%s/", creddir );
     }
-
-    json_decref(conf);
 
     if( !(ctx->creddir) ) { err = RVI_ERR_NOCRED; goto exit; }
 
@@ -948,13 +941,10 @@ exit:
     return ret;
 }
 
-/*
- * Initialize the RVI library. Call before using any other functions.
- */
 
-TRviHandle rviInit ( char *configFilename )
+TRviHandle rviInitInternal (json_t *configContent )
 {
-    if( !configFilename ) { return NULL; }
+    if( !configContent ) { return NULL; }
     /* initialize OpenSSL */
     SSL_library_init();
     SSL_load_error_strings();
@@ -984,8 +974,8 @@ TRviHandle rviInit ( char *configFilename )
 
     rviListInitialize( ctx->creds );
     rviListInitialize( ctx->rights );
-    
-    if ( rviReadJsonConfig ( ctx, configFilename ) != 0 ) {
+
+    if ( rviParseJsonConfig ( ctx, configContent ) != 0 ) {
         fprintf(stderr, "Error reading config file\n");
         goto err;
     }
@@ -1049,6 +1039,47 @@ err:
 
     return NULL;
 }
+
+
+/*
+ * Initialize the RVI library with config. Call before using any other functions.
+ */
+
+TRviHandle rviJsonInit (char *configContent )
+{
+    TRviHandle handle = NULL;
+    json_error_t errjson;
+    json_t *conf = NULL;
+
+    conf = json_loads( configContent, 0, &errjson );
+    if (!conf){
+        return handle;
+    }
+    handle = rviInitInternal(conf);
+    json_decref(conf);
+    return handle;
+}
+
+
+/*
+ * Initialize the RVI library with config file. Call before using any other functions.
+ */
+
+TRviHandle rviInit (char *configFilename)
+{
+    TRviHandle handle = NULL;
+    json_error_t errjson;
+    json_t *conf = NULL;
+
+    conf = json_load_file( configFilename, 0, &errjson );
+    if (!conf){
+        return handle;
+    }
+    handle = rviInitInternal(conf);
+    json_decref(conf);
+    return handle;
+}
+
 
 /* 
  * Tear down the API.
