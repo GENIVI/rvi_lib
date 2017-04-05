@@ -83,7 +83,9 @@ typedef enum {
     /** No (known) command */
     RVI_ERR_NOCMD           = 1008, 
     /** No right for that operation */
-    RVI_ERR_RIGHTS          = 1009 
+    RVI_ERR_RIGHTS          = 1009,
+    /** Partial JSON */
+    RVI_ERR_JSON_PART       = 1010
 } ERviStatus;
 
 // ***************************
