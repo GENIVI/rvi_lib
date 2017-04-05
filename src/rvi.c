@@ -652,8 +652,8 @@ char *start_buf_at_char(char *buf, char delim)
 
 /* This utility function destructively reads from 'src' to populate '*json'
  * with a parsed json_t object. The remaining string (possibly 'src' exactly)
- * is copied into '*remainder'. The original 'src' must not be accessed again
- * by the calling function. */
+ * is copied into the buf member of "remote" (and updates the buflen). The
+ * original 'src' must not be accessed again by the calling function. */
 int rviReadJsonChunk( json_t **json, char *src, TRviRemote *remote )
 {
     json_error_t error;
