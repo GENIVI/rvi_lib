@@ -83,7 +83,9 @@ typedef enum {
     /** No (known) command */
     RVI_ERR_NOCMD           = 1008, 
     /** No right for that operation */
-    RVI_ERR_RIGHTS          = 1009 
+    RVI_ERR_RIGHTS          = 1009,
+    /** Partial JSON */
+    RVI_ERR_JSON_PART       = 1010
 } ERviStatus;
 
 // ***************************
@@ -120,6 +122,18 @@ typedef enum {
 
 extern TRviHandle rviInit(char *configFilename);
 
+/** @brief Initialize the RVI library. Call before using any other functions.
+ *
+ * This function do the same as rviInit, but accepts config content, instead of file path.
+ *
+ * @param jsonConfig - config content.
+ *
+ * @return  A handle for the API on success, 
+ *          NULL otherwise.
+ */
+
+extern TRviHandle rviJsonInit(char *jsonConfig);
+
 /** @brief Enables or disables the verbose loging.
  *
  * By default, the verbose logging is disabled, use this function to turn it on.
@@ -129,7 +143,6 @@ extern TRviHandle rviInit(char *configFilename);
  */
 
 extern void rviSetVerboseLogs (bool verboseEnable );
-
 
 /** @brief Tear down the API.
  *
