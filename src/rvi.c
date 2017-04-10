@@ -535,7 +535,6 @@ int rviParseJsonConfig ( TRviHandle handle, json_t *conf )
     if ( !handle || !conf ) { return EINVAL; }
 
     int             err         = RVI_OK;
-    json_error_t    errjson;
     json_t          *tmp        = NULL;
     DIR             *d          = NULL;
     struct dirent   *dir        = {0};
