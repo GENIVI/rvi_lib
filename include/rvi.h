@@ -8,6 +8,7 @@
 #ifndef _RVI_H
 #define _RVI_H
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
